@@ -1,19 +1,10 @@
-import io.atomix.cluster.messaging.MessagingConfig;
-import io.atomix.cluster.messaging.impl.NettyMessagingService;
-import io.atomix.utils.net.Address;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
-public class Client {
+public class Teste {
     public static void main(String[] args) throws Exception {
         try {
             //establecer ligação
@@ -24,7 +15,7 @@ public class Client {
             System.out.println("Falei com o servidor");
 
             //informar do destino
-            System.out.println("destino;key,value");
+            System.out.println("key,value");
             String buffer;
             while ((buffer = in.readLine()) != null) {
                 out.println(buffer);

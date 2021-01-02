@@ -7,53 +7,51 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 //Servidor com relógio vetorial
 //Regra da entrega causal
-public class Server {
+public class Server implements Runnable {
+    private NettyMessagingService ms;
+    private int address;
+    private ScheduledExecutorService es;
+    private Map keysValues;
+    private VectorClock clock;
 
-    public static void main(String[] args) throws Exception {
-        ScheduledExecutorService es = Executors.newScheduledThreadPool(1);
-        List<Integer> vector = new ArrayList<>(Collections.nCopies(3, 0));
+    public Server(int address){
+        this.ms = new NettyMessagingService("nome", Address.from(address), new MessagingConfig());
+        this.address = address;
+        this.es = Executors.newScheduledThreadPool(1);
+        this.keysValues = new HashMap();
+        this.clock = new VectorClock(getVecPosition(address));
+    }
 
-        //Intoduzir um ip do server
-        System.out.println("Insert my address: (12345-12348)");
-        BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
-        int address = Integer.parseInt(input.readLine());
 
-        //Ver qual é a posição do server no relógio vetorial
-        int vectorPosition = defVecPosition(address);
 
-        NettyMessagingService ms = new NettyMessagingService("nome", Address.from(address), new MessagingConfig());
+    public void startServer() throws Exception {
 
         //mensagem recebida de outro servidor (
-        readServerMessage(ms, vector, es);
+        readServerMessage();
 
-        readResendMessage(ms, vector, es);
+        readResendMessage();
 
-        readPutMessage(ms, vector, es, vectorPosition);
+        readPutMessage();
 
-        readGetMessage(ms, vector, es);
+        readGetMessage();
 
         ms.start();
 
         //Caso receba uma mensagem do cliente (!!!!!!!!!É preciso trocar este server socket para nio ou algo do género!!!!!!!!!!!)
         ServerSocket client_listenner = new ServerSocket(address+10);
         Thread listener = new Thread(() -> {
-            readMessageClient(client_listenner,  vector, address, ms);
+            readMessageClient(client_listenner);
         });
         listener.start();
-
-        //enviar mensagem para servidor
-        sendMessageServer(input, vector, vectorPosition, address, ms);
     }
 
-    private static void readMessageClient(ServerSocket client_listenner, List<Integer> vector, int address, NettyMessagingService ms){
+    private void readMessageClient(ServerSocket client_listenner){
         try {
             Socket s = client_listenner.accept();
             System.out.println("New client");
@@ -70,10 +68,12 @@ public class Server {
                 System.out.println(operation_keyvalue[0]);
                 if (operation_keyvalue[0].equals("put")){
                     //envia para os outros
-                    operation_keyvalue[1] = vector.toString() + ";"  + operation_keyvalue[1];
+                    operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
+                    clock.incrementPosition();
+                    System.out.println(clock.getVector().toString());
                     for (int i = 12345; i < 12347; i++) {
                         if(i != address){ //para não enviar para ele próprio
-                            ms.sendAsync(Address.from("localhost", i), "put", operation_keyvalue[1].getBytes())
+                            ms.sendAsync(Address.from("localhost", i), "chat", operation_keyvalue[1].getBytes())
                                     .thenRun(() -> {
                                         System.out.println("Mensagem put enviada!");
                                     })
@@ -85,12 +85,12 @@ public class Server {
                     }
                 } else{
                     //envia para os outros
-                    operation_keyvalue[1] = vector.toString() + ";"  + operation_keyvalue[1];
+                    operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
                     for (int i = 12345; i < 12347; i++) {
                         if(i != address){ //para não enviar para ele próprio
-                            ms.sendAsync(Address.from("localhost", i), "get", operation_keyvalue[1].getBytes())
+                            ms.sendAsync(Address.from("localhost", i), "chat", operation_keyvalue[1].getBytes())
                                     .thenRun(() -> {
-                                        System.out.println("Mensagem get enviada!");
+                                        System.out.println(address + ":Mensagem get enviada!");
                                     })
                                     .exceptionally(t -> {
                                         t.printStackTrace();
@@ -105,7 +105,7 @@ public class Server {
         }
     }
 
-    private static void sendMessageServer(BufferedReader input, List<Integer> vector, int vectorPosition, int address, NettyMessagingService ms){
+  /*  private  void sendMessageServer(List<Integer> vector, int vectorPosition, int address, NettyMessagingService ms){
         String message = null;
         try {
             while ((message = input.readLine()) != ".") {
@@ -125,9 +125,9 @@ public class Server {
                 }
             }
         }catch (IOException ignore) {}
-    }
+    }*/
 
-    private static int defVecPosition(int address){
+    private int getVecPosition(int address){
         int vectorPosition = -1;
         switch (address){
             case 12345:
@@ -146,7 +146,8 @@ public class Server {
         return vectorPosition;
     }
 
-    private static void readServerMessage(NettyMessagingService ms, List<Integer> vector,ScheduledExecutorService es){
+    //Não é necessário para o trabalho!
+    private void readServerMessage(){
         ms.registerHandler("chat", (a, m)-> {
             //Tratamento do vetor e mensagem
             String messageRecive = new String(m);
@@ -155,42 +156,13 @@ public class Server {
             String tokenAux = tokens[0].substring(1, 8).replace(" ", "");
             String[] messageVector = tokenAux.split(",");
 
-            //Qual é a posição criador da mensagem no vetor
-            int messagePosition = -1;
-            switch (a.port()){
-                case 12345:
-                    messagePosition = 0;
-                    break;
-                case 12346:
-                    messagePosition = 1;
-                    break;
-                case 12347:
-                    messagePosition = 2;
-                    break;
-                case 12348:
-                    messagePosition = 3;
-                    break;
-                default:
-                    System.out.println("Warning: Invalid message address");
-                    break;
-            }
-            System.out.println("Local: " + vector.toString());
-            System.out.println("Message: " + tokens[0]);
+            System.out.println(address + ": Local: " + clock.getVector().toString());
+            System.out.println(address +": Message: " + tokens[0]);
 
             //ver se a mensagem é válida
-            boolean causalBool = true;
-            //l[i] + 1 = r[i]
-            if (vector.get(messagePosition) + 1 != Integer.parseInt(messageVector[messagePosition]))
-                causalBool = false;
-            for (int i = 0; i < 3; i++)
-                if (i != messagePosition && vector.get(i) < Integer.parseInt(messageVector[i])) {
-                    causalBool = false;
-                    break;
-                }
-            //caso seja válida incrementar vetor local e  dar print da mensagem
-            if (causalBool) {
+            if (clock.regraCausal(messageVector)) {
                 System.out.println("New message: " + tokens[1] + " from " + a);
-                vector.set(messagePosition, Integer.parseInt(messageVector[messagePosition]));
+                clock.getVector().set(clock.getVectorPosition(), Integer.parseInt(messageVector[clock.getVectorPosition()]));
             }
             //caso seja inválida mandar uma mensagem a pedir o reenvio
             else {
@@ -207,7 +179,7 @@ public class Server {
         }, es);
     }
 
-    private static void readResendMessage(NettyMessagingService ms, List<Integer> vector,ScheduledExecutorService es){
+    private void readResendMessage(){
         ms.registerHandler("resend", (ra, resend)->{
             String messageRende = new String(resend);
        /*     ms.sendAsync(Address.from("localhost", ra.port()), "chat", (new String(resend)).getBytes())
@@ -221,8 +193,8 @@ public class Server {
         }, es);
     }
 
-    private static void readPutMessage(NettyMessagingService ms, List<Integer> vector,ScheduledExecutorService es, int vectorPosition){
-        int finalVectorPosition1 = vectorPosition;
+    private void readPutMessage(){
+        int finalVectorPosition1 = clock.getVectorPosition();
         ms.registerHandler("put", (a, m)-> {
             String messageRecive = new String(m);
             //hash da mensagem
@@ -237,12 +209,30 @@ public class Server {
             //
             System.out.println("Recebi um put");
         }, es);
+
+        ms.registerHandler("putServer", (a, m)-> {
+            String messageRecive = new String(m);
+            //hash da mensagem
+            //ver se é para mim ou não
+            String[] key_value = messageRecive.split(",");
+
+            System.out.println("Recebi um put");
+            System.out.println("Guardei a mensagem");
+        }, es);
     }
 
-    private static void readGetMessage(NettyMessagingService ms, List<Integer> vector,ScheduledExecutorService es){
+    private void readGetMessage(){
         ms.registerHandler("get", (a, m)-> {
             System.out.println("Recebi um get");
         }, es);
     }
 
+    @Override
+    public void run() {
+        try {
+            startServer();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

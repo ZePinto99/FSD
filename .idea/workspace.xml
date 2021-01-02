@@ -35,7 +35,7 @@
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../PSD" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="project.structure.last.edited" value="Modules" />
     <property name="project.structure.proportion" value="0.0" />
     <property name="project.structure.side.proportion" value="0.2" />
@@ -46,9 +46,9 @@
       <recent name="C:\Users\asus\Desktop\Uni\4ªano\FSD" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.Client">
-    <configuration name="Client" type="Application" factoryName="Application" singleton="false" temporary="true" nameIsGenerated="true">
-      <option name="MAIN_CLASS_NAME" value="Client" />
+  <component name="RunManager" selected="Application.Teste">
+    <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="Main" />
       <module name="FSD" />
       <method v="2">
         <option name="Make" enabled="true" />
@@ -61,13 +61,22 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="Teste" type="Application" factoryName="Application" singleton="false" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="Teste" />
+      <module name="FSD" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <list>
       <item itemvalue="Application.Server" />
-      <item itemvalue="Application.Client" />
+      <item itemvalue="Application.Main" />
+      <item itemvalue="Application.Teste" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Application.Client" />
+        <item itemvalue="Application.Teste" />
+        <item itemvalue="Application.Main" />
       </list>
     </recent_temporary>
   </component>
@@ -87,7 +96,8 @@
       <workItem from="1607965926610" duration="2806000" />
       <workItem from="1608415823999" duration="6856000" />
       <workItem from="1608591806238" duration="41000" />
-      <workItem from="1609251213505" duration="5432000" />
+      <workItem from="1609251213505" duration="5508000" />
+      <workItem from="1609599083116" duration="6884000" />
     </task>
     <servers />
   </component>
@@ -100,26 +110,30 @@
       <screen x="0" y="0" width="1366" height="728" />
     </state>
     <state x="137" y="19" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.0.1366.728@0.0.1366.728" timestamp="1609255673525" />
-    <state x="463" y="119" key="FileChooserDialogImpl" timestamp="1609251229893">
+    <state x="829" y="70" key="#com.intellij.ide.util.MemberChooser" timestamp="1609604412805">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state x="463" y="119" key="FileChooserDialogImpl/0.0.1366.728@0.0.1366.728" timestamp="1609251229893" />
-    <state width="1323" height="158" key="GridCell.Tab.0.bottom" timestamp="1609255711081">
+    <state x="829" y="70" key="#com.intellij.ide.util.MemberChooser/0.0.1366.728@0.0.1366.728" timestamp="1609604412805" />
+    <state x="463" y="119" key="FileChooserDialogImpl" timestamp="1609257293601">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state width="1323" height="158" key="GridCell.Tab.0.bottom/0.0.1366.728@0.0.1366.728" timestamp="1609255711081" />
-    <state width="1323" height="158" key="GridCell.Tab.0.center" timestamp="1609255711080">
+    <state x="463" y="119" key="FileChooserDialogImpl/0.0.1366.728@0.0.1366.728" timestamp="1609257293601" />
+    <state width="1323" height="266" key="GridCell.Tab.0.bottom" timestamp="1609605993220">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state width="1323" height="158" key="GridCell.Tab.0.center/0.0.1366.728@0.0.1366.728" timestamp="1609255711080" />
-    <state width="1323" height="158" key="GridCell.Tab.0.left" timestamp="1609255711080">
+    <state width="1323" height="266" key="GridCell.Tab.0.bottom/0.0.1366.728@0.0.1366.728" timestamp="1609605993220" />
+    <state width="1323" height="266" key="GridCell.Tab.0.center" timestamp="1609605993220">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state width="1323" height="158" key="GridCell.Tab.0.left/0.0.1366.728@0.0.1366.728" timestamp="1609255711080" />
-    <state width="1323" height="158" key="GridCell.Tab.0.right" timestamp="1609255711080">
+    <state width="1323" height="266" key="GridCell.Tab.0.center/0.0.1366.728@0.0.1366.728" timestamp="1609605993220" />
+    <state width="1323" height="266" key="GridCell.Tab.0.left" timestamp="1609605993219">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state width="1323" height="158" key="GridCell.Tab.0.right/0.0.1366.728@0.0.1366.728" timestamp="1609255711080" />
+    <state width="1323" height="266" key="GridCell.Tab.0.left/0.0.1366.728@0.0.1366.728" timestamp="1609605993219" />
+    <state width="1323" height="266" key="GridCell.Tab.0.right" timestamp="1609605993220">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state width="1323" height="266" key="GridCell.Tab.0.right/0.0.1366.728@0.0.1366.728" timestamp="1609605993220" />
     <state x="59" y="0" key="new project wizard" timestamp="1607782794443">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
