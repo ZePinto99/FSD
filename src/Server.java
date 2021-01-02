@@ -68,9 +68,8 @@ public class Server implements Runnable {
                 System.out.println(operation_keyvalue[0]);
                 if (operation_keyvalue[0].equals("put")){
                     //envia para os outros
-                    operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
                     clock.incrementPosition();
-                    System.out.println(clock.getVector().toString());
+                    operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
                     for (int i = 12345; i < 12347; i++) {
                         if(i != address){ //para não enviar para ele próprio
                             ms.sendAsync(Address.from("localhost", i), "chat", operation_keyvalue[1].getBytes())
@@ -88,6 +87,9 @@ public class Server implements Runnable {
                     operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
                     for (int i = 12345; i < 12347; i++) {
                         if(i != address){ //para não enviar para ele próprio
+                            clock.incrementPosition();
+                            System.out.println(clock.getVector().toString());
+                            operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
                             ms.sendAsync(Address.from("localhost", i), "chat", operation_keyvalue[1].getBytes())
                                     .thenRun(() -> {
                                         System.out.println(address + ":Mensagem get enviada!");
@@ -104,28 +106,6 @@ public class Server implements Runnable {
             e.printStackTrace();
         }
     }
-
-  /*  private  void sendMessageServer(List<Integer> vector, int vectorPosition, int address, NettyMessagingService ms){
-        String message = null;
-        try {
-            while ((message = input.readLine()) != ".") {
-                vector.set(vectorPosition, vector.get(vectorPosition) + 1);
-                message = vector.toString() + ";"  + message;
-                for (int i = 12345; i < 12348; i++) {
-                    if(i != address){ //para não enviar para ele próprio
-                        ms.sendAsync(Address.from("localhost", i), "chat", message.getBytes())
-                                .thenRun(() -> {
-                                    System.out.println("Mensagem enviada!");
-                                })
-                                .exceptionally(t -> {
-                                    t.printStackTrace();
-                                    return null;
-                                });
-                    }
-                }
-            }
-        }catch (IOException ignore) {}
-    }*/
 
     private int getVecPosition(int address){
         int vectorPosition = -1;
@@ -149,6 +129,7 @@ public class Server implements Runnable {
     //Não é necessário para o trabalho!
     private void readServerMessage(){
         ms.registerHandler("chat", (a, m)-> {
+            System.out.println("readServerMessage\n");
             //Tratamento do vetor e mensagem
             String messageRecive = new String(m);
             String delims = ";";
@@ -160,9 +141,11 @@ public class Server implements Runnable {
             System.out.println(address +": Message: " + tokens[0]);
 
             //ver se a mensagem é válida
-            if (clock.regraCausal(messageVector)) {
+            System.out.println("IF\n");
+            int sender = getVecPosition(a.port());
+            if (clock.regraCausal(messageVector, sender)) {
                 System.out.println("New message: " + tokens[1] + " from " + a);
-                clock.getVector().set(clock.getVectorPosition(), Integer.parseInt(messageVector[clock.getVectorPosition()]));
+                clock.getVector().set(sender, Integer.parseInt(messageVector[sender]));
             }
             //caso seja inválida mandar uma mensagem a pedir o reenvio
             else {
@@ -176,6 +159,8 @@ public class Server implements Runnable {
                             return null;
                         });
             }
+            System.out.println(address + ": Local: " + clock.getVector().toString());
+            System.out.println(address +": Message: " + tokens[0]);
         }, es);
     }
 

@@ -11,22 +11,23 @@ public class VectorClock {
         this.vectorPosition = vectorPosition;
     }
 
-    public boolean regraCausal(String[] messageVector){
+    public boolean regraCausal(String[] messageVector, int sender){
         //ver se a mensagem é válida
         boolean causalBool = true;
         //l[i] + 1 = r[i]
-        if (vector.get(vectorPosition) + 1 != Integer.parseInt(messageVector[vectorPosition]))
+        if (vector.get(sender) + 1 != Integer.parseInt(messageVector[sender]))
             causalBool = false;
         for (int i = 0; i < 3; i++)
-            if (i != vectorPosition && vector.get(i) < Integer.parseInt(messageVector[i])) {
+            if (i != sender && vector.get(i) < Integer.parseInt(messageVector[i])) {
                 causalBool = false;
+                System.out.println(causalBool);
                 break;
             }
         return causalBool;
     }
 
     public void incrementPosition(){
-        vector.add(vectorPosition, vector.get(vectorPosition) + 1);
+        vector.set(vectorPosition, vector.get(vectorPosition) + 1);
     }
 
     public List<Integer> getVector() {

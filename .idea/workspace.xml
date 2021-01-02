@@ -46,7 +46,7 @@
       <recent name="C:\Users\asus\Desktop\Uni\4ªano\FSD" />
     </key>
   </component>
-  <component name="RunManager" selected="Application.Teste">
+  <component name="RunManager" selected="Application.Main">
     <configuration name="Main" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="Main" />
       <module name="FSD" />
@@ -97,7 +97,7 @@
       <workItem from="1608415823999" duration="6856000" />
       <workItem from="1608591806238" duration="41000" />
       <workItem from="1609251213505" duration="5508000" />
-      <workItem from="1609599083116" duration="6884000" />
+      <workItem from="1609599083116" duration="9205000" />
     </task>
     <servers />
   </component>
@@ -118,22 +118,38 @@
       <screen x="0" y="0" width="1366" height="728" />
     </state>
     <state x="463" y="119" key="FileChooserDialogImpl/0.0.1366.728@0.0.1366.728" timestamp="1609257293601" />
-    <state width="1323" height="266" key="GridCell.Tab.0.bottom" timestamp="1609605993220">
+    <state width="1323" height="272" key="GridCell.Tab.0.bottom" timestamp="1609608322874">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state width="1323" height="266" key="GridCell.Tab.0.bottom/0.0.1366.728@0.0.1366.728" timestamp="1609605993220" />
-    <state width="1323" height="266" key="GridCell.Tab.0.center" timestamp="1609605993220">
+    <state width="1323" height="272" key="GridCell.Tab.0.bottom/0.0.1366.728@0.0.1366.728" timestamp="1609608322874" />
+    <state width="1323" height="272" key="GridCell.Tab.0.center" timestamp="1609608322873">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state width="1323" height="266" key="GridCell.Tab.0.center/0.0.1366.728@0.0.1366.728" timestamp="1609605993220" />
-    <state width="1323" height="266" key="GridCell.Tab.0.left" timestamp="1609605993219">
+    <state width="1323" height="272" key="GridCell.Tab.0.center/0.0.1366.728@0.0.1366.728" timestamp="1609608322873" />
+    <state width="1323" height="272" key="GridCell.Tab.0.left" timestamp="1609608322873">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state width="1323" height="266" key="GridCell.Tab.0.left/0.0.1366.728@0.0.1366.728" timestamp="1609605993219" />
-    <state width="1323" height="266" key="GridCell.Tab.0.right" timestamp="1609605993220">
+    <state width="1323" height="272" key="GridCell.Tab.0.left/0.0.1366.728@0.0.1366.728" timestamp="1609608322873" />
+    <state width="1323" height="272" key="GridCell.Tab.0.right" timestamp="1609608322874">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
-    <state width="1323" height="266" key="GridCell.Tab.0.right/0.0.1366.728@0.0.1366.728" timestamp="1609605993220" />
+    <state width="1323" height="272" key="GridCell.Tab.0.right/0.0.1366.728@0.0.1366.728" timestamp="1609608322874" />
+    <state width="1323" height="223" key="GridCell.Tab.1.bottom" timestamp="1609606601563">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state width="1323" height="223" key="GridCell.Tab.1.bottom/0.0.1366.728@0.0.1366.728" timestamp="1609606601563" />
+    <state width="1323" height="223" key="GridCell.Tab.1.center" timestamp="1609606601563">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state width="1323" height="223" key="GridCell.Tab.1.center/0.0.1366.728@0.0.1366.728" timestamp="1609606601563" />
+    <state width="1323" height="223" key="GridCell.Tab.1.left" timestamp="1609606601563">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state width="1323" height="223" key="GridCell.Tab.1.left/0.0.1366.728@0.0.1366.728" timestamp="1609606601563" />
+    <state width="1323" height="223" key="GridCell.Tab.1.right" timestamp="1609606601563">
+      <screen x="0" y="0" width="1366" height="728" />
+    </state>
+    <state width="1323" height="223" key="GridCell.Tab.1.right/0.0.1366.728@0.0.1366.728" timestamp="1609606601563" />
     <state x="59" y="0" key="new project wizard" timestamp="1607782794443">
       <screen x="0" y="0" width="1366" height="728" />
     </state>
