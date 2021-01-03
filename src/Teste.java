@@ -3,30 +3,30 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 public class Teste {
     public static void main(String[] args) throws Exception {
-        try {
-            //establecer ligação
-            System.out.println("Quer falar com que servidor?");
-            BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
-            Socket socket = new Socket("127.0.0.1", Integer.parseInt(in.readLine())+10);
-            PrintWriter out = new PrintWriter(socket.getOutputStream());
-            System.out.println("Falei com o servidor");
+        List<Integer> nodes = new ArrayList<>();
+        nodes.add(12345);
+        ClientLibrary c = new ClientLibrary(nodes);
 
-            //informar do destino
-            System.out.println("key,value");
-            String buffer;
-            while ((buffer = in.readLine()) != null) {
-                out.println(buffer);
 
-                out.flush();
-            }
+        Map<Long,byte[]> teste = new HashMap<>();
+        long num1=10L;
 
-            //fechar
-            socket.shutdownOutput();
-            socket.shutdownInput();
-            socket.close();
-        } catch (IOException ignored) {}
+
+        teste.put(num1,"atuamae".getBytes());
+
+        c.put(teste);
+
+
+
+
     }
+
 }
