@@ -36,6 +36,11 @@
             <artifactId>slf4j-simple</artifactId>
             <version>1.7.7</version>
         </dependency>
+        <dependency>
+            <groupId>org.javatuples</groupId>
+            <artifactId>javatuples</artifactId>
+            <version>1.2</version>
+        </dependency>
     </dependencies>
 
 </project>
