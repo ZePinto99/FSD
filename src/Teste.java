@@ -1,3 +1,6 @@
+import Data.ListPair;
+import Data.PeerData;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -22,9 +25,23 @@ public class Teste {
 
         teste.put(num1,"atuamae".getBytes());
 
+
+
+
         c.put(teste);
+        /*
+        List<Integer> tag = new ArrayList<>();
+        tag.add(0,0);
+        tag.add(1,2);
+        tag.add(2,0);
+        tag.add(3,0);
 
 
+        ListPair lp = new ListPair();
+        lp.addPair(30L,"fodadse".getBytes());
+        PeerData pd = new PeerData(tag,lp,12346);
+        c.teste(pd);
+         */
 
 
     }

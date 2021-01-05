@@ -5,35 +5,46 @@ import java.util.List;
 public class VectorClock {
     private List<Integer> vector;
     private int vectorPosition;
+    private int nserver;
 
     public VectorClock(int NServers,int vectorPosition){
         this.vector = new ArrayList<>(Collections.nCopies(NServers, 0));
         this.vectorPosition = vectorPosition;
+        this.nserver = NServers;
     }
 
-    public boolean regraCausal(String[] messageVector, int sender){
+    public boolean regraCausal(List<Integer> messageVector, int sender){
         //ver se a mensagem é válida
-        boolean causalBool = true;
         //l[i] + 1 = r[i]
-        if (vector.get(sender) + 1 != Integer.parseInt(messageVector[sender]))
-            causalBool = false;
-        for (int i = 0; i < 3; i++)
-            if (i != sender && vector.get(i) < Integer.parseInt(messageVector[i])) {
-                causalBool = false;
-                System.out.println(causalBool);
-                break;
-            }
-        return causalBool;
+        try {
+
+
+            if (vector.get(sender) + 1 != (messageVector.get(sender)))
+                return false;
+            for (int i = 0; i < nserver; i++)
+                if (i != sender && vector.get(i) < (messageVector.get(i))) {
+                    return false;
+                }
+        }catch (Exception e){e.printStackTrace();}
+        return true;
     }
 
     public void incrementPosition(){
-        try {
-            vector.set(vectorPosition, vector.get(vectorPosition) + 1);
-        }catch (Exception e){
-            e.printStackTrace();
-        }
+
+        vector.set(vectorPosition, vector.get(vectorPosition) + 1);
+
 
     }
+
+    // assume que a tag deu vdd na regraCausal
+    public void updateSenderPosition(List<Integer> v, int sender){
+
+        for(int i = 0; i < vector.size();i++){
+            vector.set(i,Math.max(vector.get(i),v.get(i)));
+        }
+    }
+
+
 
     public List<Integer> getVector() {
         return vector;

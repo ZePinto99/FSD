@@ -1,6 +1,7 @@
 package Data;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -8,16 +9,38 @@ public class PeerData implements Serializable {
 
     private List<Integer> vectorTag;
 
-    private ListPair dados;
+    private ListPair yourdados;
+
+    private Map<Integer, ListPair> otherData;
 
 
-    public PeerData(List<Integer> tag,ListPair valores){
-        this.dados = valores;
-         this.vectorTag = tag;
+    private int sender;
+
+    public PeerData(List<Integer> tag,ListPair valores,int sender){
+        this.sender = sender;
+        this.yourdados = valores;
+        this.vectorTag = tag;
+        this.otherData = new HashMap<>();
 
 
     }
 
+
+    public Map<Integer, ListPair> getOtherData() {
+        return otherData;
+    }
+
+    public void setOtherData(Map<Integer, ListPair> otherData) {
+        this.otherData = otherData;
+    }
+
+    public int getSender() {
+        return sender;
+    }
+
+    public void setSender(int sender) {
+        this.sender = sender;
+    }
 
     public List<Integer> getVectorTag() {
         return vectorTag;
@@ -27,11 +50,11 @@ public class PeerData implements Serializable {
         this.vectorTag = vectorTag;
     }
 
-    public ListPair getTeste() {
-        return dados;
+    public ListPair getList() {
+        return yourdados;
     }
 
-    public void setTeste(ListPair teste) {
-        this.dados = teste;
+    public void setList(ListPair teste) {
+        this.yourdados = teste;
     }
 }

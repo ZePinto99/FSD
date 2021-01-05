@@ -6,9 +6,11 @@ public class KeyHash {
 
         if(key < 0) key = Math.abs(key);
 
+        long intervaloBase = intervalo;
+
         for(i = 0;i < servers;i++){
-            if( key < intervalo ) return i;
-            intervalo += intervalo;
+            if( key <= intervalo ) return i;
+            intervalo += intervaloBase;
         }
 
         return i;

@@ -1,3 +1,4 @@
+import Data.PeerData;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
@@ -13,7 +14,7 @@ public class ClientLibrary {
 
     public ClientLibrary(List<Integer> nodes){
         this.nodes = nodes;
-        this.ms = new NettyMessagingService("cliente", Address.from(12349), new MessagingConfig());
+        this.ms = new NettyMessagingService("cliente", Address.from(8000), new MessagingConfig());
         ms.start();
     }
 
@@ -53,6 +54,21 @@ public class ClientLibrary {
             e.printStackTrace();
             return null;
         });
+    }
+
+
+    public CompletableFuture<Void> teste(PeerData pd){
+
+        return ms.sendAsync(Address.from("localhost", 12345), "putServer", CollectionSerializer.getObjectInByte(pd))
+                .thenRun(() -> {
+                    System.out.println("Mensagem put enviada!");
+                })
+                .exceptionally(e -> {
+                    e.printStackTrace();
+                    return null;
+                });
+
+
     }
 
 
