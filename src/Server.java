@@ -1,12 +1,10 @@
+import Data.ListPair;
+import Data.PeerData;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import javafx.util.Pair;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ServerSocket;
-import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -27,21 +25,23 @@ public class Server implements Runnable {
         this.address = address;
         this.es = Executors.newScheduledThreadPool(1);
         this.keysValues = new HashMap<>();
-        this.clock = new VectorClock(getVecPosition(address));
         setPeers(peerss);
+        this.clock = new VectorClock(peerss.size(),getVecPosition());
 
     }
 
     private void setPeers(List<Integer> peers) {
         this.peers = new ArrayList<>();
-        for(int x : peers) this.peers.add(x);
+        this.peers.addAll(peers);
     }
 
     public void startServer() throws Exception {
 
-        readPutMessage();
+        clientPutHandler();
 
-        readGetMessage();
+        serverPutHandler();
+
+        clientGetHandler();
 
         ms.start();
 
@@ -49,32 +49,39 @@ public class Server implements Runnable {
 
 
 
-    private int getVecPosition(int address){
-        int vectorPosition = -1;
-        switch (address){
-            case 12345:
-                vectorPosition = 0;
-                break;
-            case 12346:
-                vectorPosition = 1;
-                break;
-            case 12347:
-                vectorPosition = 2;
-                break;
-            default:
-                System.out.println("Warning: Invalid address");
-                break;
+    private int getVecPosition(){
+        for(int i= 0;i <peers.size();i++){
+            if(peers.get(i) == address){
+                return i;
+            }
         }
-        return vectorPosition;
+        return -1;
     }
 
 
-    // TODO: talvez usar locks nas chaves devido a poder ter 2 clientes a escrever a msm chave
-    private void readPutMessage(){
-        int finalVectorPosition1 = clock.getVectorPosition();
+    private void serverPutHandler(){
+        ms.registerHandler("putServer", (a, m)-> { // m é do tipo ListPair
+            System.out.println("Recebi um put de um server peer");
+            // TODO: verificar se a msg verifica a regra causal
+
+
+
+        }, es);
+
+    }
+
+
+
+    private void clientPutHandler(){
+
         ms.registerHandler("put", (a, m)-> {
             System.out.println("Recebido pedido de put de um cliente!");
+
             Map<Long,byte[]> values = (Map<Long,byte[]>) CollectionSerializer.getObjectFromByte(m);
+
+            // Hashmap com os valores temporarios a mandar para os outros sv
+            // em que a key é o servidor destino e como value tem a lista de pares a mandar
+            Map<Integer, ListPair> tmp = new HashMap<>();
 
             // itera todas as chaves enviadas pelo cliente
             assert values != null;
@@ -88,42 +95,61 @@ public class Server implements Runnable {
 
                 // vai ver a onde pertence a chave
                 int sv = KeyHash.giveHashOfKey(key,this.peers.size());
-                System.out.println("peer" + sv);
 
+                int targetSv = peers.get(sv);
 
-                if(peers.get(sv) == address){ // sou eu o dono da chave
+                if(targetSv == address){ // sou eu o dono da chave
                     keysValues.put(key,value);
-                }else { // TODO: mandar a {chave,valor} para o peer responsavel por ela
+                }else { // adicionar o par a lista do peer para dps mandar
+                    if(tmp.containsKey(targetSv)){
+                        tmp.get(targetSv).addPair(key,value);
+
+                    }else {
+                        ListPair lp = new ListPair();
+                        lp.addPair(key,value);
+                        tmp.put(targetSv,lp);
+                    }
 
                 }
 
-
-
             }
 
+            if(!tmp.isEmpty()) sendKeysToRespectiveSv(tmp);
 
-            //hash da mensagem
-            //ver se é para mim ou não
-            /*
-            String messageRecive = new String(m);
-            String[] key_value = messageRecive.split(",");
-            //se for para mim guardo e atualizo o relógio
-            if (Integer.parseInt(key_value[0]) == finalVectorPosition1){
-                System.out.println("Guardei a mensagem");
-            }
-            else System.out.println("A mensagem não é para mim");
-            */
-            //
-            System.out.println("Respondi ao pedido put");
-        }, es);
-
-        ms.registerHandler("putServer", (a, m)-> {
-            System.out.println("Recebi um put do servidor"); // assumo que vem na msm em hashmap?
+            System.out.println("Respondi ao pedido put do cliente");
 
         }, es);
     }
 
-    private void readGetMessage(){
+
+    // funçao aux
+    private void sendKeysToRespectiveSv(Map<Integer, ListPair> data){
+        // responder a todos os peers
+
+        for(Map.Entry<Integer,ListPair> entry : data.entrySet()){
+            int sv = entry.getKey();
+            ListPair keys = entry.getValue();
+
+
+            PeerData pdata = new PeerData(clock.incAndGetVectorClone(),keys);
+
+
+            ms.sendAsync(Address.from("localhost",sv),"putServer",CollectionSerializer.getObjectInByte(pdata)).
+                    thenRun(() -> {
+                        System.out.println("Mensagem putServer enviada para peer");
+                    })
+                    .exceptionally(e -> {
+                        e.printStackTrace();
+                        return null;
+                    });
+        }
+
+    }
+
+
+
+    // TODO : fazer isto
+    private void clientGetHandler(){
         ms.registerHandler("get", (a, m)-> {
             System.out.println("Recebi um get");
         }, es);

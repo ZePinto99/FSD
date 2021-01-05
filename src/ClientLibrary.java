@@ -19,7 +19,7 @@ public class ClientLibrary {
 
     // TODO: implementar isto direito a escolher a sorte um nodo da lista
     private int chooseRandomPeerPort(){
-        return 12345;
+        return 12346;
     }
 
 

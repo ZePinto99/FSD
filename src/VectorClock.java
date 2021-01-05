@@ -6,8 +6,8 @@ public class VectorClock {
     private List<Integer> vector;
     private int vectorPosition;
 
-    public VectorClock(int vectorPosition){
-        this.vector = new ArrayList<>(Collections.nCopies(3, 0));
+    public VectorClock(int NServers,int vectorPosition){
+        this.vector = new ArrayList<>(Collections.nCopies(NServers, 0));
         this.vectorPosition = vectorPosition;
     }
 
@@ -27,11 +27,24 @@ public class VectorClock {
     }
 
     public void incrementPosition(){
-        vector.set(vectorPosition, vector.get(vectorPosition) + 1);
+        try {
+            vector.set(vectorPosition, vector.get(vectorPosition) + 1);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
     }
 
     public List<Integer> getVector() {
         return vector;
+    }
+
+    public List<Integer> incAndGetVectorClone(){
+        incrementPosition();
+        List<Integer> arr = new ArrayList<>();
+        arr.addAll(vector);
+        return arr;
+
     }
 
     public void setVector(List<Integer> vector) {
