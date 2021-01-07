@@ -13,7 +13,7 @@ public class KeyHash {
             intervalo += intervaloBase;
         }
 
-        return i;
+        return servers-1;
 
     }
 

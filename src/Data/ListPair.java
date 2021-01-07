@@ -14,7 +14,7 @@ public class ListPair implements Serializable {
         lista  = new ArrayList<>();
     }
 
-    public List<Pair<Long, byte[]>> getLista() {
+    public List< Pair<Long, byte[]>> getLista() {
         return lista;
     }
 

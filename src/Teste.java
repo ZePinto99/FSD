@@ -25,6 +25,8 @@ public class Teste {
 
         teste.put(num1,"atuamae".getBytes());
 
+        long num2 = Long.MAX_VALUE-1;
+        teste.put(num2,"atuaprima".getBytes());
 
 
 
