@@ -1,216 +1,331 @@
+import Data.KeyValue;
+import Data.ListPair;
+import Data.PeerData;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
+import javafx.scene.chart.ScatterChart;
+import javafx.util.Pair;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.locks.ReentrantLock;
 
 //Servidor com relógio vetorial
 //Regra da entrega causal
 public class Server implements Runnable {
-    private NettyMessagingService ms;
-    private int address;
-    private ScheduledExecutorService es;
-    private Map keysValues;
-    private VectorClock clock;
+    private ReentrantLock hashMapLock;
+    private ReentrantLock queueLock;
 
-    public Server(int address){
+    private NettyMessagingService ms;
+    private ScheduledExecutorService es;
+    private int address;
+    private List<Integer> peers;
+
+    private Map<Long,KeyValue> keysValues;
+    private VectorClock clock;
+    private List<PeerData> msgQueue;
+
+    public Server(List<Integer> peerss, int address){
         this.ms = new NettyMessagingService("nome", Address.from(address), new MessagingConfig());
         this.address = address;
-        this.es = Executors.newScheduledThreadPool(1);
-        this.keysValues = new HashMap();
-        this.clock = new VectorClock(getVecPosition(address));
+        this.es = Executors.newScheduledThreadPool(4);
+        this.keysValues = new HashMap<>();
+        this.hashMapLock = new ReentrantLock();
+        this.queueLock = new ReentrantLock();
+        setPeers(peerss);
+        this.clock = new VectorClock(peerss.size(),getVecPosition(this.address));
+        this.msgQueue = new ArrayList<>();
+
     }
 
+    private void setPeers(List<Integer> peers) {
+        this.peers = new ArrayList<>();
+        this.peers.addAll(peers);
+    }
 
+    public void startServer() {
 
-    public void startServer() throws Exception {
+        clientPutHandler();
 
-        //mensagem recebida de outro servidor (
-        readServerMessage();
+        serverPutHandler();
 
-        readResendMessage();
+        clientGetHandler();
 
-        readPutMessage();
+        ServerGetHandler();
 
-        readGetMessage();
+        ClockUpdateHandler();
 
         ms.start();
 
-        //Caso receba uma mensagem do cliente (!!!!!!!!!É preciso trocar este server socket para nio ou algo do género!!!!!!!!!!!)
-        ServerSocket client_listenner = new ServerSocket(address+10);
-        Thread listener = new Thread(() -> {
-            readMessageClient(client_listenner);
-        });
-        listener.start();
     }
 
-    private void readMessageClient(ServerSocket client_listenner){
-        try {
-            Socket s = client_listenner.accept();
-            System.out.println("New client");
-            BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            String message_client = null;
-            //Quando recebe mensagem do cliente
-            while((message_client = in.readLine()) != null){
-                System.out.println("Client message");
-                String operation_keyvalue[] = message_client.split(";");
-                //put ou get?
-                        /*///para mim ou para outro?  (!!em falta!!)
-                            //se para mim fazer a operação
-                            //se para outro enviar mensagem*/
-                System.out.println(operation_keyvalue[0]);
-                if (operation_keyvalue[0].equals("put")){
-                    //envia para os outros
-                    clock.incrementPosition();
-                    operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
-                    for (int i = 12345; i < 12347; i++) {
-                        if(i != address){ //para não enviar para ele próprio
-                            ms.sendAsync(Address.from("localhost", i), "chat", operation_keyvalue[1].getBytes())
-                                    .thenRun(() -> {
-                                        System.out.println("Mensagem put enviada!");
-                                    })
-                                    .exceptionally(t -> {
-                                        t.printStackTrace();
-                                        return null;
-                                    });
-                        }
-                    }
-                } else{
-                    //envia para os outros
-                    operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
-                    for (int i = 12345; i < 12347; i++) {
-                        if(i != address){ //para não enviar para ele próprio
-                            clock.incrementPosition();
-                            System.out.println(clock.getVector().toString());
-                            operation_keyvalue[1] = clock.getVector().toString() + ";"  + operation_keyvalue[1];
-                            ms.sendAsync(Address.from("localhost", i), "chat", operation_keyvalue[1].getBytes())
-                                    .thenRun(() -> {
-                                        System.out.println(address + ":Mensagem get enviada!");
-                                    })
-                                    .exceptionally(t -> {
-                                        t.printStackTrace();
-                                        return null;
-                                    });
-                        }
-                    }
-                }
+
+
+    private int getVecPosition(int add){
+        for(int i= 0;i <peers.size();i++){
+            if(peers.get(i) == add){
+                return i;
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+        return -1;
     }
 
-    private int getVecPosition(int address){
-        int vectorPosition = -1;
-        switch (address){
-            case 12345:
-                vectorPosition = 0;
-                break;
-            case 12346:
-                vectorPosition = 1;
-                break;
-            case 12347:
-                vectorPosition = 2;
-                break;
-            default:
-                System.out.println("Warning: Invalid address");
-                break;
+
+    private void serverPutHandler(){
+
+        ms.registerHandler("putServer", (a, m)-> { // m é do tipo PeerData
+            System.out.println(address +" -  Recebi um put de um server peer " + a.port());
+            PeerData msg = (PeerData) CollectionSerializer.getObjectFromByte(m);
+
+            this.clock.lock();
+
+            System.out.println(address +" - MY VECTOR "+ this.clock.getVector());
+            assert msg != null;
+            System.out.println(address +" - VECTOR RECEBIDO "+ msg.getVectorTag());
+            boolean respostaCausal = clock.regraCausal(msg.getVectorTag(),getVecPosition(a.port()));
+            System.out.println(address + " - RESPOSTA DA REGRA CAUSAL: "+ respostaCausal);
+
+
+            if(respostaCausal){
+                clock.updateVectorClock(msg.getVectorTag());
+
+                lockKeys(msg.getList().getLista());
+
+                writeKeysInHashMap(msg.getList().getLista());
+
+                sendKeysToRespectiveSv(msg.getOtherData());
+
+                this.clock.unLock();
+
+                unlockKeys(msg.getList().getLista());
+
+                checkMsgQueue();
+            }else {
+                this.clock.unLock();
+                this.queueLock.lock();
+                msgQueue.add(msg);
+                this.queueLock.unlock();
+                System.out.println(address +" - Mensagem nao respeita a regra causal, adicionada a msgQueue");
+            }
+
+
+        }, es);
+
+    }
+
+    private void writeKeysInHashMap(List< Pair<Long, byte[]>> lista){
+        for(Pair<Long, byte[]> entry : lista){
+            keysValues.put(entry.getKey(),new KeyValue(entry.getValue()));
         }
-        return vectorPosition;
+        System.out.println(address +" - ESCREVI CHAVES NA HASHMAP");
+
     }
 
-    //Não é necessário para o trabalho!
-    private void readServerMessage(){
-        ms.registerHandler("chat", (a, m)-> {
-            System.out.println("readServerMessage\n");
-            //Tratamento do vetor e mensagem
-            String messageRecive = new String(m);
-            String delims = ";";
-            String[] tokens = messageRecive.split(delims);
-            String tokenAux = tokens[0].substring(1, 8).replace(" ", "");
-            String[] messageVector = tokenAux.split(",");
 
-            System.out.println(address + ": Local: " + clock.getVector().toString());
-            System.out.println(address +": Message: " + tokens[0]);
+    private void lockKeys(List<Pair<Long, byte[]>> lista){
 
-            //ver se a mensagem é válida
-            System.out.println("IF\n");
-            int sender = getVecPosition(a.port());
-            if (clock.regraCausal(messageVector, sender)) {
-                System.out.println("New message: " + tokens[1] + " from " + a);
-                clock.getVector().set(sender, Integer.parseInt(messageVector[sender]));
+        this.hashMapLock.lock();
+        for(Pair<Long, byte[]> entry: lista){
+            if(!keysValues.containsKey(entry.getKey())) {
+                keysValues.put(entry.getKey(), new KeyValue());
             }
-            //caso seja inválida mandar uma mensagem a pedir o reenvio
-            else {
-                //enviar mensagem de pedido de reenvio
-                ms.sendAsync(Address.from("localhost", a.port()), "resend", tokens[0].getBytes()) //enviar devolta a parte mensagem que é preciso reenviar
-                        .thenRun(() -> {
-                            System.out.println("Pedido de reenvio!");
-                        })
-                        .exceptionally(t -> {
-                            t.printStackTrace();
-                            return null;
-                        });
-            }
-            System.out.println(address + ": Local: " + clock.getVector().toString());
-            System.out.println(address +": Message: " + tokens[0]);
-        }, es);
+            keysValues.get(entry.getKey()).lock();
+
+        }
+
+        this.hashMapLock.unlock();
+
+
+        System.out.println(address +" - DEI LOCK AS KEYS");
     }
 
-    private void readResendMessage(){
-        ms.registerHandler("resend", (ra, resend)->{
-            String messageRende = new String(resend);
-       /*     ms.sendAsync(Address.from("localhost", ra.port()), "chat", (new String(resend)).getBytes())
-                    .thenRun(() -> {
-                        System.out.println("Recebido pedido de reenvio!");
-                    })
-                    .exceptionally(t -> {
-                        t.printStackTrace();
-                        return null;
-                    });*/ System.out.println("Recebido pedido de reenvio!");
-        }, es);
+    private void unlockKeys(List<Pair<Long, byte[]>> lista){
+        System.out.println(address +" - DEI UNLOCK AS KEYS");
+        this.hashMapLock.lock();
+        for(Pair<Long, byte[]> entry: lista){
+            keysValues.get(entry.getKey()).unLock();
+        }
+        this.hashMapLock.unlock();
     }
 
-    private void readPutMessage(){
-        int finalVectorPosition1 = clock.getVectorPosition();
+
+    private void clientPutHandler(){
+
         ms.registerHandler("put", (a, m)-> {
-            String messageRecive = new String(m);
-            //hash da mensagem
-            //ver se é para mim ou não
-            String[] key_value = messageRecive.split(",");
-            //se for para mim guardo e atualizo o relógio
-            if (Integer.parseInt(key_value[0]) == finalVectorPosition1){
-                System.out.println("Guardei a mensagem");
+            System.out.println(address +" - Recebido pedido de put de um cliente!");
+
+            Map<Long,byte[]> values = (Map<Long,byte[]>) CollectionSerializer.getObjectFromByte(m);
+
+            // Hashmap com os valores temporarios a mandar para os outros sv
+            // em que a key é o servidor destino e como value tem a lista de pares a mandar
+            Map<Integer, ListPair> tmp = new HashMap<>();
+
+            // lista temporaria com os valores que tenho de por na hashmap local
+            List<Pair<Long, byte[]>> tmpList = new ArrayList<>();
+
+            // itera todas as chaves enviadas pelo cliente
+            assert values != null;
+            // lock a hahsmap
+            //lock ao relogio
+
+            for(Map.Entry<Long,byte[]> entry : values.entrySet()) {
+                Long key = entry.getKey();
+                byte[] value = entry.getValue();
+
+                // para teste apenas, eliminar dps
+                String s = new String(value, StandardCharsets.UTF_8);
+                System.out.println(address +" - Value que o cliente mandou:" + s);
+
+                // vai ver a onde pertence a chave
+
+
+
+
+                int sv = KeyHash.giveHashOfKey(key,this.peers.size());
+
+                int targetSv = 0;
+
+                targetSv = peers.get(sv);
+
+                if(targetSv == address){ // sou eu o dono da chave
+                    Pair<Long, byte[]> p = new Pair<>(key,value);
+                    tmpList.add(p);
+                }else { // adicionar o par a lista do peer para dps mandar
+                    if(!tmp.containsKey(targetSv))tmp.put(targetSv,new ListPair());
+                    tmp.get(targetSv).addPair(key,value);
+                }
+
+
             }
-            else System.out.println("A mensagem não é para mim");
 
-            //
-            System.out.println("Recebi um put");
-        }, es);
+            lockKeys(tmpList);
+            this.clock.lock();
 
-        ms.registerHandler("putServer", (a, m)-> {
-            String messageRecive = new String(m);
-            //hash da mensagem
-            //ver se é para mim ou não
-            String[] key_value = messageRecive.split(",");
+            writeKeysInHashMap(tmpList);
+            sendKeysToRespectiveSv(tmp);
 
-            System.out.println("Recebi um put");
-            System.out.println("Guardei a mensagem");
+            this.clock.unLock();
+            unlockKeys(tmpList);
+
         }, es);
     }
 
-    private void readGetMessage(){
+
+    // funçao aux
+    private void sendKeysToRespectiveSv(Map<Integer, ListPair> data){
+
+        if(data.keySet().isEmpty()) return;
+
+        int minSv = Integer.MAX_VALUE;
+
+        for(int x : data.keySet()){
+             if(x < minSv) minSv = x;
+        }
+
+        if(minSv == Integer.MAX_VALUE) return;
+
+        List<Integer> tagclock = clock.incAndGetVectorClone();
+        System.out.println(address +" - tag do clock que envio " + tagclock);
+
+        Map<Integer, ListPair> otherData = new HashMap<>();
+
+        for(Map.Entry<Integer,ListPair> entry : data.entrySet()){
+            if(entry.getKey()== minSv) continue;
+            otherData.put(entry.getKey(),entry.getValue());
+        }
+
+        PeerData pdata = new PeerData(tagclock,data.get(minSv),address);
+        pdata.setOtherData(otherData);
+
+
+        ms.sendAsync(Address.from("localhost", minSv), "putServer", CollectionSerializer.getObjectInByte(pdata)).
+                thenRun(() -> {
+                    //System.out.println("Eu " + this.address + "Mensagem putServer enviada para peer "+ finalMinSv);
+                    checkMsgQueue();
+
+                })
+                .exceptionally(e -> {
+                    e.printStackTrace();
+                    return null;
+                });
+
+        for(int i = 0; i< peers.size();i++){
+            if(peers.get(i)== minSv || peers.get(i) == address) continue;
+            ms.sendAsync(Address.from("localhost", peers.get(i)), "updateClock", CollectionSerializer.getObjectInByte(tagclock)).
+                    exceptionally(e -> {
+                        e.printStackTrace();
+                        return null;
+                    });
+
+
+        }
+
+}
+
+
+
+    private void ClockUpdateHandler(){
+        ms.registerHandler("updateClock", (a, m)-> { //m  é lista de inteiros
+            System.out.println(address +" - Recebi um updateClock");
+            List<Integer> tag = (List<Integer>) CollectionSerializer.getObjectFromByte(m);
+            this.clock.lock();
+            this.clock.updateVectorClock(tag);
+            System.out.println(address +" - Vetor atualiazdo " + this.clock.getVector());
+            this.clock.unLock();
+
+            checkMsgQueue();
+        }, es);
+
+    }
+
+
+
+    // TODO : fazer isto
+    private void clientGetHandler(){
         ms.registerHandler("get", (a, m)-> {
             System.out.println("Recebi um get");
+
+            
         }, es);
+
     }
+
+
+    private void ServerGetHandler(){
+
+
+    }
+
+
+    private void checkMsgQueue(){
+        boolean respostaCausal;
+
+        this.queueLock.lock();
+        for(PeerData msg : msgQueue){
+            respostaCausal = clock.regraCausal(msg.getVectorTag(),getVecPosition(msg.getSender()));
+            if(respostaCausal){
+                lockKeys(msg.getList().getLista());
+                this.clock.lock();
+                System.out.println("Mensagem perdida finalmente lida");
+
+                writeKeysInHashMap(msg.getList().getLista());
+                sendKeysToRespectiveSv(msg.getOtherData());
+
+                unlockKeys(msg.getList().getLista());
+                this.clock.unLock();
+
+                msgQueue.remove(msg);
+            }
+        }
+        this.queueLock.unlock();
+
+    }
+
+
+
 
     @Override
     public void run() {

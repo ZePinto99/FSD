@@ -1,37 +1,63 @@
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class VectorClock {
+    private ReentrantLock lock;
     private List<Integer> vector;
     private int vectorPosition;
+    private int nserver;
 
-    public VectorClock(int vectorPosition){
-        this.vector = new ArrayList<>(Collections.nCopies(3, 0));
+    public VectorClock(int NServers,int vectorPosition){
+        this.lock = new ReentrantLock();
+        this.vector = new ArrayList<>(Collections.nCopies(NServers, 0));
         this.vectorPosition = vectorPosition;
+        this.nserver = NServers;
     }
 
-    public boolean regraCausal(String[] messageVector, int sender){
-        //ver se a mensagem é válida
-        boolean causalBool = true;
-        //l[i] + 1 = r[i]
-        if (vector.get(sender) + 1 != Integer.parseInt(messageVector[sender]))
-            causalBool = false;
-        for (int i = 0; i < 3; i++)
-            if (i != sender && vector.get(i) < Integer.parseInt(messageVector[i])) {
-                causalBool = false;
-                System.out.println(causalBool);
-                break;
+    public boolean regraCausal(List<Integer> messageVector, int sender){
+
+
+        if (vector.get(sender) + 1 != (messageVector.get(sender))){
+            return false;
+        }
+        for (int i = 0; i < nserver; i++) {
+            if (i != sender && vector.get(i) > (messageVector.get(i))) {
+                return false;
             }
-        return causalBool;
+        }
+        return true;
     }
 
     public void incrementPosition(){
         vector.set(vectorPosition, vector.get(vectorPosition) + 1);
+
+
     }
+
+    // assume que a tag deu vdd na regraCausal
+    public void updateVectorClock(List<Integer> v){
+
+        for(int i = 0; i < vector.size();i++){
+            if(i == vectorPosition)continue;
+            vector.set(i,Math.max(vector.get(i),v.get(i)));
+        }
+
+    }
+
+
 
     public List<Integer> getVector() {
         return vector;
+    }
+
+    public List<Integer> incAndGetVectorClone(){
+        incrementPosition();
+        List<Integer> arr = new ArrayList<>();
+        arr.addAll(vector);
+        return arr;
+
     }
 
     public void setVector(List<Integer> vector) {
@@ -45,4 +71,14 @@ public class VectorClock {
     public void setVectorPosition(int vectorPosition) {
         this.vectorPosition = vectorPosition;
     }
+
+    public void lock(){
+        this.lock.lock();
+
+    }
+
+    public void unLock(){
+        this.lock.unlock();
+    }
+
 }
