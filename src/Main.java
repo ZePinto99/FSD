@@ -10,7 +10,7 @@ public class Main {
         servers.add(12345);
         servers.add(12346);
         servers.add(12347);
-        servers.add(8000);
+        //servers.add(8000);
 
         for (int add = 12345; add<12348; add++) {
             int finalAdd = add;

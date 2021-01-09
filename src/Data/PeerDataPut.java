@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class PeerData implements Serializable {
+public class PeerDataPut implements Serializable{
 
     private List<Integer> vectorTag;
 
@@ -16,7 +16,7 @@ public class PeerData implements Serializable {
 
     private int sender;
 
-    public PeerData(List<Integer> tag,ListPair valores,int sender){
+    public PeerDataPut(List<Integer> tag, ListPair valores, int sender){
         this.sender = sender;
         this.yourdados = valores;
         this.vectorTag = tag;

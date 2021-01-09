@@ -1,4 +1,4 @@
-import Data.PeerData;
+import Data.PeerDataPut;
 import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
@@ -9,25 +9,26 @@ import java.util.concurrent.CompletableFuture;
 public class ClientLibrary {
     private NettyMessagingService ms;
     private List<Integer> nodes;
+    private int peer;
 
     private ClientLibrary(){}
 
-    public ClientLibrary(List<Integer> nodes){
+    public ClientLibrary(List<Integer> nodes,int adress){
         this.nodes = nodes;
-        this.ms = new NettyMessagingService("cliente", Address.from(8000), new MessagingConfig());
+        this.ms = new NettyMessagingService("cliente", Address.from(adress), new MessagingConfig());
+        peer = chooseRandomPeerPort();
         ms.start();
     }
 
-    // TODO: implementar isto direito a escolher a sorte um nodo da lista
     private int chooseRandomPeerPort(){
+        Random rand = new Random();
+        //return rand.nextInt(nodes.size());
         return 12346;
     }
 
 
 
     public CompletableFuture<Void> put(Map<Long,byte[]> values){
-        int peer =  chooseRandomPeerPort();
-
         return ms.sendAsync(Address.from("localhost", peer), "put", CollectionSerializer.getObjectInByte(values))
                 .thenRun(() -> {
                     System.out.println("Mensagem put enviada!");
@@ -41,8 +42,8 @@ public class ClientLibrary {
     }
 
 
+    // TODO: isto ainda nao está bem implementado
     public CompletableFuture<Map<Long,byte[]>> get(Collection<Long> keys){
-        int peer =  chooseRandomPeerPort();
         byte[] collection = CollectionSerializer.getObjectInByte(keys);
 
 
@@ -57,7 +58,8 @@ public class ClientLibrary {
     }
 
 
-    public CompletableFuture<Void> teste(PeerData pd){
+    // serve apenas para testar causualidade de mensagens
+    public CompletableFuture<Void> teste(PeerDataPut pd){
 
         return ms.sendAsync(Address.from("localhost", 12345), "putServer", CollectionSerializer.getObjectInByte(pd))
                 .thenRun(() -> {
@@ -67,9 +69,10 @@ public class ClientLibrary {
                     e.printStackTrace();
                     return null;
                 });
-
-
     }
+
+
+
 
 
 

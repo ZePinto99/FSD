@@ -28,7 +28,7 @@ public class KeyValue {
 
 
     public byte[] getDados() {
-        return dados;
+        return dados.clone();
     }
 
     public void setDados(byte[] dados) {
