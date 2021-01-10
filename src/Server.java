@@ -3,7 +3,6 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.messaging.impl.NettyMessagingService;
 import io.atomix.utils.net.Address;
 import javafx.util.Pair;
-
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -185,18 +184,22 @@ public class Server implements Runnable {
 
             }
             Map<Long,byte[]> response = new HashMap<>();
-            response.put(10L,"asdasd".getBytes());
+
             lockKeys(tmpmine);
             this.clock.lock();
 
-            //getKeysOfHashMap(tmpmine,response);
+            getKeysOfHashMap(tmpmine,response);
 
-            //sendGetRequestToRespectivSv(tmpOthers,response);
+            try {
+                sendGetRequestToRespectivSv(tmpOthers,response);
+            }catch (Exception e){
+                e.printStackTrace();
+            }
+
 
             unlockKeys(tmpmine);
             System.out.println(address + " Respondi ao get do cliente" + a.port());
-            ms.sendAsync(Address.from("localhost",a.port()),"get",CollectionSerializer.getObjectInByte(response));
-            //return CollectionSerializer.getObjectInByte(response);
+            return CollectionSerializer.getObjectInByte(response);
         }, es);
 
     }
@@ -341,8 +344,8 @@ public class Server implements Runnable {
 
     }
 
-    // TODO: ESTE METODO TEM DE SER BLOQUEANTE
-    private void sendGetRequestToRespectivSv(Map<Integer, List<Long>> map,Map<Long,byte[]> response){
+    //
+    private void sendGetRequestToRespectivSv(Map<Integer, List<Long>> map,Map<Long,byte[]> response) throws Exception{
         if(map.keySet().isEmpty()) {
             this.clock.unLock();
             return;
@@ -351,21 +354,25 @@ public class Server implements Runnable {
 
         List<Integer> tagclock = clock.incAndGetVectorClone();
         this.clock.unLock();
-        CompletableFuture<byte[]> x;
 
+        CompletableFuture<byte[]> completableFuture;
+        List<Integer> listaTagClock = new ArrayList<>();
 
         for(Map.Entry<Integer, List<Long>> entry : map.entrySet()) {
             PeerDataGet dados = new PeerDataGet(tagclock,entry.getValue());
-            x = ms.sendAndReceive(Address.from("localhost", entry.getKey()), "getServer", CollectionSerializer.getObjectInByte(dados));
-            x.thenCompose(bytes -> {
-                System.out.println(address + " Recebi a resposta do getServer");
-                Map<Long, byte[]> resposta = (Map<Long, byte[]>) CollectionSerializer.getObjectFromByte(bytes);
-                if(resposta.keySet().isEmpty())System.out.println("A resposta do sv veio empty");
-                for (Map.Entry<Long, byte[]> resp : resposta.entrySet()) {
-                    response.put(resp.getKey(), resp.getValue());
-                }
-                return null;
-            });
+            listaTagClock.add(entry.getKey());
+            System.out.println(address + "- Enviei pedido de get ao sv" + entry.getKey());
+            completableFuture = ms.sendAndReceive(Address.from("localhost", entry.getKey()), "getServer", CollectionSerializer.getObjectInByte(dados));
+
+            byte[] bytes = completableFuture.get();
+
+            Map<Long, byte[]> resposta = (Map<Long, byte[]>) CollectionSerializer.getObjectFromByte(bytes);
+
+            if(resposta.keySet().isEmpty())System.out.println(address + "- A resposta do sv veio empty");
+
+            for (Map.Entry<Long, byte[]> resp : resposta.entrySet()) {
+                response.put(resp.getKey(), resp.getValue());
+            }
 
         }
 

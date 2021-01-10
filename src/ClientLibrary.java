@@ -23,7 +23,7 @@ public class ClientLibrary {
     private int chooseRandomPeerPort(){
         Random rand = new Random();
         //return rand.nextInt(nodes.size());
-        return 12346;
+        return 12345;
     }
 
 
@@ -46,15 +46,20 @@ public class ClientLibrary {
     public CompletableFuture<Map<Long,byte[]>> get(Collection<Long> keys){
         byte[] collection = CollectionSerializer.getObjectInByte(keys);
 
+        CompletableFuture<byte[]> completFut = ms.sendAndReceive(Address.from("localhost",peer ), "get", collection);
 
-        return ms.sendAndReceive(Address.from("localhost",peer ), "get", collection).thenApply(bytes -> {
-            System.out.println("Mensagem enviada para " + peer + " e recebida");
-            return (Map<Long,byte[]>) CollectionSerializer.getObjectFromByte(bytes);
+        Map<Long,byte[]> dados;
 
-        }).exceptionally(e -> {
+        try {
+            byte[] bytes = completFut.get();
+            dados = (Map<Long,byte[]>) CollectionSerializer.getObjectFromByte(bytes);
+            CompletableFuture<Map<Long,byte[]>> response = new CompletableFuture<>();
+            response.complete(dados);
+            return response;
+        }catch (Exception e){
             e.printStackTrace();
             return null;
-        });
+        }
     }
 
 

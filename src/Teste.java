@@ -18,7 +18,7 @@ public class Teste {
         teste.put(num1,"a".getBytes());
 
         long num2 = Long.MAX_VALUE-1;
-        teste.put(num2,"a".getBytes());
+        //teste.put(num2,"a".getBytes());
 
 
         ClientLibrary c2 = new ClientLibrary(nodes,8000);
@@ -33,20 +33,20 @@ public class Teste {
         teste2.put(num2,"b".getBytes());
 
 
-        c.put(teste);
+        //c.put(teste);
         //c2.put(teste2);
 
 
         List<Long> lista = new ArrayList<>();
         lista.add(10L);
 
-        /*
+
         c.get(lista).thenAccept((map) ->{
             if(map.keySet().isEmpty())System.out.println("RESPOSTA VAZIA");
             String s = new String(map.get(10L), StandardCharsets.UTF_8);
             System.out.println(" - Value que o cliente mandou:" + s);
 
-        });*/
+        });
 
         /*
         List<Integer> tag = new ArrayList<>();
