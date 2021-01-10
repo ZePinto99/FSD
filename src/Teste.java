@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.Thread.sleep;
+
 public class Teste {
     public static void main(String[] args) throws Exception {
         List<Integer> nodes = new ArrayList<>();
@@ -18,7 +20,7 @@ public class Teste {
         teste.put(num1,"a".getBytes());
 
         long num2 = Long.MAX_VALUE-1;
-        teste.put(num2,"a".getBytes());
+        //teste.put(num2,"a".getBytes());
 
 
         ClientLibrary c2 = new ClientLibrary(nodes,8000);
@@ -41,12 +43,14 @@ public class Teste {
         lista.add(10L);
 
 
-        /*c.get(lista).thenAccept((map) ->{
+        sleep(500);
+        c.get(lista).thenAccept((map) ->{
             if(map.keySet().isEmpty())System.out.println("RESPOSTA VAZIA");
+            if(map.get(10L)==null) System.out.println("Get com valor a nulo = get foi processado primeiro que o put");
             String s = new String(map.get(10L), StandardCharsets.UTF_8);
-            System.out.println(" - Value que o cliente mandou:" + s);
+            System.out.println("Valor que a chave tem: " + s);
 
-        });*/
+        });
 
         /*
         List<Integer> tag = new ArrayList<>();

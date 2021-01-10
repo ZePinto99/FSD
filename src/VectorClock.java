@@ -73,13 +73,17 @@ public class VectorClock {
     }
 
     public void lock(){
-        this.lock.lock();
+        if(!this.lock.isLocked()) {
+            this.lock.lock();
+            System.out.println("Dei lock ao clock");
+        }
 
     }
 
     public void unLock(){
         if (lock.isHeldByCurrentThread()) {
             lock.unlock();
+            System.out.println("Dei unlock ao clock");
         }
     }
 

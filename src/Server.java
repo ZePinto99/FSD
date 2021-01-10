@@ -121,16 +121,16 @@ public class Server implements Runnable {
     private void serverPutHandler(){
 
         ms.registerHandler("putServer", (a, m)-> { // m é do tipo PeerData
-            System.out.println(address +" -  Recebi um put de um server peer " + a.port());
+            System.out.println(address +" - Recebi um put de um server peer " + a.port());
             PeerDataPut msg = (PeerDataPut) CollectionSerializer.getObjectFromByte(m);
 
             this.clock.lock();
 
             System.out.println(address +" - MY VECTOR "+ this.clock.getVector());
             assert msg != null;
-            System.out.println(address +" - VECTOR RECEBIDO "+ msg.getVectorTag());
+            System.out.println(address +" - Put - VECTOR RECEBIDO "+ msg.getVectorTag());
             boolean respostaCausal = clock.regraCausal(msg.getVectorTag(),getVecPosition(a.port()));
-            System.out.println(address + " - RESPOSTA DA REGRA CAUSAL: "+ respostaCausal);
+            System.out.println(address + " - Put - RESPOSTA DA REGRA CAUSAL: "+ respostaCausal);
 
 
             if(respostaCausal){
@@ -169,7 +169,7 @@ public class Server implements Runnable {
 
     private void clientGetHandler(){
         ms.registerHandler("get", (a, m)-> {
-            System.out.println(address + " Recebi um get");
+            System.out.println(address + " - Recebi um get");
             Collection<Long> dados = (Collection<Long>) CollectionSerializer.getObjectFromByte(m);
 
             assert dados != null;
@@ -212,14 +212,16 @@ public class Server implements Runnable {
 
     private void ServerGetHandler(){
         ms.registerHandler("getServer", (a, m)-> {
-            System.out.println(address +" Recebi um get de um Server");
+            System.out.println(address +" - Recebi um get de um Server");
             PeerDataGet dados = (PeerDataGet) CollectionSerializer.getObjectFromByte(m);
             Map<Long, byte[]> resp = new HashMap<>();
             this.clock.lock();
+            System.out.println(address +" - Get - VECTOR RECEBIDO "+ dados.getVectorTag());
             boolean respostaCausal = clock.regraCausal(dados.getVectorTag(),getVecPosition(a.port()));
-            this.clock.unLock();
+            System.out.println(address + " - Get - RESPOSTA DA REGRA CAUSAL: "+ respostaCausal);
 
             if(respostaCausal){
+                clock.updateVectorClock(dados.getVectorTag());
                 this.hashMapLock.lock();
                 for(long key : dados.getListKeys()){
                     if(keysValues.containsKey(key)) {
@@ -230,7 +232,9 @@ public class Server implements Runnable {
                 }
                 this.hashMapLock.unlock();
             }
+            this.clock.unLock();
 
+            System.out.println(address + " - Respondi a um GetServer");
             return CollectionSerializer.getObjectInByte(resp);
 
 
@@ -306,7 +310,7 @@ public class Server implements Runnable {
         if(minSv == Integer.MAX_VALUE) return;
 
         List<Integer> tagclock = clock.incAndGetVectorClone();
-        System.out.println(address +" - tag do clock que envio " + tagclock);
+        System.out.println(address +" - Put - tag do clock que envio " + tagclock);
 
         Map<Integer, ListPair> otherData = new HashMap<>();
 
@@ -361,6 +365,9 @@ public class Server implements Runnable {
         }
 
         List<Integer> tagclock = clock.incAndGetVectorClone();
+
+        System.out.println(address +" - Get - tag do clock que envio " + tagclock);
+
         this.clock.unLock();
 
         CompletableFuture<byte[]> completableFuture;
@@ -369,7 +376,7 @@ public class Server implements Runnable {
         for(Map.Entry<Integer, List<Long>> entry : map.entrySet()) {
             PeerDataGet dados = new PeerDataGet(tagclock,entry.getValue());
             listaTagClock.add(entry.getKey());
-            System.out.println(address + "- Enviei pedido de get ao sv" + entry.getKey());
+            System.out.println(address + " - Enviei pedido de get ao sv " + entry.getKey());
             completableFuture = ms.sendAndReceive(Address.from("localhost", entry.getKey()), "getServer", CollectionSerializer.getObjectInByte(dados));
 
             byte[] bytes = completableFuture.get();

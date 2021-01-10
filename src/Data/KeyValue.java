@@ -20,7 +20,9 @@ public class KeyValue {
     }
 
     public void lock(){
-        this.lockConta.lock();
+        if(!this.lockConta.isLocked()) {
+            this.lockConta.lock();
+        }
     }
 
     public void unLock(){
