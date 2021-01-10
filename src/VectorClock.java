@@ -78,7 +78,9 @@ public class VectorClock {
     }
 
     public void unLock(){
-        this.lock.unlock();
+        if (lock.isHeldByCurrentThread()) {
+            lock.unlock();
+        }
     }
 
 }

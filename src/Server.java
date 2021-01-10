@@ -142,10 +142,17 @@ public class Server implements Runnable {
 
                 sendKeysToRespectiveSv(msg.getOtherData());
 
-                this.clock.unLock();
+                try {
 
-                unlockKeys(msg.getList().getLista());
+                    this.clock.unLock();
 
+                    unlockKeys(msg.getList().getLista());
+                }catch (Exception e){
+                    e.printStackTrace();
+                }
+
+
+                System.out.println(address + " - Respondi ao putServer do " + a.port());
                 checkMsgQueue();
             }else {
                 this.clock.unLock();
@@ -192,12 +199,11 @@ public class Server implements Runnable {
 
             try {
                 sendGetRequestToRespectivSv(tmpOthers,response);
+                unlockKeys(tmpmine);
             }catch (Exception e){
                 e.printStackTrace();
             }
 
-
-            unlockKeys(tmpmine);
             System.out.println(address + " Respondi ao get do cliente" + a.port());
             return CollectionSerializer.getObjectInByte(response);
         }, es);
@@ -248,6 +254,7 @@ public class Server implements Runnable {
 
 
     private void writeKeysInHashMap(List< Pair<Long, byte[]>> lista){
+        if(lista.size()==0)return;
         for(Pair<Long, byte[]> entry : lista){
             keysValues.put(entry.getKey(),new KeyValue(entry.getValue()));
         }
@@ -257,7 +264,7 @@ public class Server implements Runnable {
 
 
     private void lockKeys(List<Pair<Long, byte[]>> lista){
-
+        if(lista.size()==0)return;
         this.hashMapLock.lock();
         for(Pair<Long, byte[]> entry: lista){
             if(!keysValues.containsKey(entry.getKey())) {
@@ -274,6 +281,7 @@ public class Server implements Runnable {
     }
 
     private void unlockKeys(List<Pair<Long, byte[]>> lista){
+        if(lista.size()==0)return;
         System.out.println(address +" - DEI UNLOCK AS KEYS");
         this.hashMapLock.lock();
         for(Pair<Long, byte[]> entry: lista){

@@ -9,6 +9,7 @@ public class KeyValue {
 
     public KeyValue(){
         this.lockConta = new ReentrantLock();
+        this.dados = new byte[0];
 
     }
 
@@ -23,7 +24,9 @@ public class KeyValue {
     }
 
     public void unLock(){
-        this.lockConta.unlock();
+        if (lockConta.isHeldByCurrentThread()) {
+            lockConta.unlock();
+        }
     }
 
 
