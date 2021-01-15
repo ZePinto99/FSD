@@ -37,7 +37,7 @@ public class Server implements Runnable {
         this.queueLock = new ReentrantLock();
         setPeers(peerss);
         this.clock = new VectorClock(peerss.size(),getVecPosition(this.address));
-        this.msgQueue = Collections.synchronizedList(new ArrayList<>());
+        this.msgQueue = new ArrayList<>();
 
     }
 
@@ -46,6 +46,9 @@ public class Server implements Runnable {
         this.peers.addAll(peers);
     }
 
+    /*
+    * inicializa o servidor ,i.e,
+    * */
     public void startServer() {
 
         clientPutHandler();
@@ -145,25 +148,20 @@ public class Server implements Runnable {
 
                 sendKeysToRespectiveSv(msg.getOtherData());
 
-                try {
 
-                    this.clock.unLock();
+                unlockKeys(msg.getList().getLista());
 
-                    unlockKeys(msg.getList().getLista());
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
 
 
                 System.out.println(address + " - Respondi ao putServer do " + a.port());
                 checkMsgQueue();
             }else {
-                this.clock.unLock();
                 this.queueLock.lock();
                 msgQueue.add(msg);
                 this.queueLock.unlock();
                 System.out.println(address +" - Mensagem nao respeita a regra causal, adicionada a msgQueue");
             }
+            this.clock.unLock();
 
 
         }, es);
@@ -202,6 +200,7 @@ public class Server implements Runnable {
 
             try {
                 sendGetRequestToRespectivSv(tmpOthers,response);
+                this.clock.unLock();
                 unlockKeys(tmpmine);
             }catch (Exception e){
                 e.printStackTrace();
@@ -216,9 +215,21 @@ public class Server implements Runnable {
     private void ServerGetHandler(){
         ms.registerHandler("getServer", (a, m)-> {
             System.out.println(address +" - Recebi um get de um Server");
-            PeerDataGet dados = (PeerDataGet) CollectionSerializer.getObjectFromByte(m);
-            Map<Long, byte[]> resp = new HashMap<>();
-            this.clock.lock();
+            PeerDataGet dados = null;
+            Map<Long, byte[]> resp = null;
+            try {
+
+                dados = (PeerDataGet) CollectionSerializer.getObjectFromByte(m);
+
+                resp = new HashMap<>();
+                if(this.clock.teste()){
+                    System.out.println("BLOQUEOU O LOCK");
+                }
+                this.clock.lock();
+
+
+            }catch (Exception e){e.printStackTrace();}
+
             System.out.println(address +" - Get - VECTOR RECEBIDO "+ dados.getVectorTag());
             boolean respostaCausal = clock.regraCausal(dados.getVectorTag(),getVecPosition(a.port()));
             System.out.println(address + " - Get - RESPOSTA DA REGRA CAUSAL: "+ respostaCausal);
@@ -251,9 +262,9 @@ public class Server implements Runnable {
             this.clock.lock();
             this.clock.updateVectorClock(tag);
             System.out.println(address +" - Recebi um updateClock - Vetor atualiazdo " + this.clock.getVector());
+            checkMsgQueue();
             this.clock.unLock();
 
-            checkMsgQueue();
         }, es);
 
     }
@@ -369,7 +380,6 @@ public class Server implements Runnable {
     //
     private void sendGetRequestToRespectivSv(Map<Integer, List<Long>> map,Map<Long,byte[]> response) throws Exception{
         if(map.keySet().isEmpty()) {
-            this.clock.unLock();
             return;
 
         }
@@ -378,7 +388,6 @@ public class Server implements Runnable {
 
         System.out.println(address +" - Get - tag do clock que envio " + tagclock);
 
-        this.clock.unLock();
 
         CompletableFuture<byte[]> completableFuture;
         List<Integer> listaTagClock = new ArrayList<>();
@@ -413,10 +422,7 @@ public class Server implements Runnable {
         boolean respostaCausal;
 
         this.queueLock.lock();
-        this.clock.lock();
         try {
-
-
         Iterator<PeerDataPut> iterator = msgQueue.iterator();
         while(iterator.hasNext()){
             PeerDataPut data = iterator.next();
@@ -433,10 +439,12 @@ public class Server implements Runnable {
                 iterator.remove();
                 msgQueue.remove(data);
             }
+
         }
-        }catch (Exception e){e.printStackTrace();}
+        }catch (Exception e){
+            e.printStackTrace();
+        }
         this.queueLock.unlock();
-        this.clock.unLock();
 
     }
 
