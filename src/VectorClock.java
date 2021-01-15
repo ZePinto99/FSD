@@ -11,10 +11,9 @@ public class VectorClock {
 
     public VectorClock(int NServers,int vectorPosition){
         this.lock = new ReentrantLock();
-        this.nserver = NServers;
-        this.vector = new ArrayList<>(Collections.nCopies(nserver, 0));
+        this.vector = new ArrayList<>(Collections.nCopies(NServers, 0));
         this.vectorPosition = vectorPosition;
-
+        this.nserver = NServers;
     }
 
     public boolean regraCausal(List<Integer> messageVector, int sender){
@@ -72,9 +71,8 @@ public class VectorClock {
 
         try {
             this.lock.lock();
-            System.out.println(vectorPosition +" - Dei lock ao clock");
         }catch (Exception e){e.printStackTrace();}
-
+        //System.out.println("Dei lock ao clock");
 
 
     }
@@ -82,7 +80,7 @@ public class VectorClock {
     public void unLock(){
        try{
            lock.unlock();
-           System.out.println(vectorPosition + " - Dei unlock ao clock");
+           //System.out.println("Dei unlock ao clock");
        }catch (Exception e){
            System.out.println("Excessao no vector clock");
            e.printStackTrace();
@@ -90,10 +88,6 @@ public class VectorClock {
 
 
 
-    }
-
-    public boolean teste (){
-        return this.lock.isLocked();
     }
 
 }

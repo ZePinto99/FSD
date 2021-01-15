@@ -22,7 +22,8 @@ public class ClientLibrary {
 
     private int chooseRandomPeerPort(){
         Random rand = new Random();
-        return nodes.get(rand.nextInt(nodes.size()));
+        //return rand.nextInt(nodes.size());
+        return 12346;
     }
 
 
