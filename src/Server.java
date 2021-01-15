@@ -126,6 +126,10 @@ public class Server implements Runnable {
         }, es);
     }
 
+    /*
+     * Funçao auxiliiar verifica qual é o peer que escrever primeiro, em caso de exister multimas chaves para multimos peers, visto que a prioridade é
+     * sempre escrever no peer com menor port independetemente do server que recebe o pedido do cliente de modo a assegurar consistencia no sistema
+     */
     private void handleMessage(List<Pair<Long, byte[]>> tmpList,Map<Integer, ListPair> tmp){
         int minSv = Integer.MAX_VALUE;
 
@@ -133,17 +137,17 @@ public class Server implements Runnable {
             if(x < minSv) minSv = x;
         }
 
-        if(tmpList.size() != 0 && !tmp.isEmpty()){
-            if(this.address > minSv){
+        if(tmpList.size() != 0 && !tmp.isEmpty()){ // existe chaves que eu sou dono e tambem existe chaves de outros peers
+            if(this.address > minSv){ // se existir um peer com menor port é esse que vai iniciar a escrita e por isso mando toda a informaçao para ele
                 ListPair lista = new ListPair();
                 lista.setLista(tmpList);
                 tmp.put(address,lista);
                 sendKeysToRespectiveSv(tmp);
-            }else {
+            }else { // nao ha um peer com menor port logo é o atual que inicia a escrita
                 writeKeysInHashMap(tmpList);
                 sendKeysToRespectiveSv(tmp);
             }
-        }else {
+        }else { // so o atual é que tem chaves ou os outros ou nenhum por isso nao ha problemas de consistencia
             writeKeysInHashMap(tmpList);
             sendKeysToRespectiveSv(tmp);
         }
@@ -278,7 +282,9 @@ public class Server implements Runnable {
                 this.hashMapLock.lock();
                 for(long key : dados.getListKeys()){
                     if(keysValues.containsKey(key)) {
+                        keysValues.get(key).lock();
                         resp.put(key, keysValues.get(key).getDados());
+                        keysValues.get(key).unLock();
                     }else {
                         resp.put(key,null);
                     }
