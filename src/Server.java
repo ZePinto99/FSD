@@ -244,11 +244,10 @@ public class Server implements Runnable {
 
     private void ClockUpdateHandler(){
         ms.registerHandler("updateClock", (a, m)-> { //m  é lista de inteiros
-            System.out.println(address +" - Recebi um updateClock");
             List<Integer> tag = (List<Integer>) CollectionSerializer.getObjectFromByte(m);
             this.clock.lock();
             this.clock.updateVectorClock(tag);
-            System.out.println(address +" - Vetor atualiazdo " + this.clock.getVector());
+            System.out.println(address +" - Recebi um updateClock - Vetor atualiazdo " + this.clock.getVector());
             this.clock.unLock();
 
             checkMsgQueue();
@@ -298,6 +297,7 @@ public class Server implements Runnable {
 
     // funçao aux
     private void sendKeysToRespectiveSv(Map<Integer, ListPair> data){
+        try {
 
         if(data.keySet().isEmpty()) return;
 
@@ -323,9 +323,10 @@ public class Server implements Runnable {
         pdata.setOtherData(otherData);
 
 
+        int finalMinSv = minSv;
         ms.sendAsync(Address.from("localhost", minSv), "putServer", CollectionSerializer.getObjectInByte(pdata)).
                 thenRun(() -> {
-                    //System.out.println("Eu " + this.address + "Mensagem putServer enviada para peer "+ finalMinSv);
+                    System.out.println(this.address + " - Mensagem putServer enviada para peer "+ finalMinSv + " com o clock " + tagclock);
                     checkMsgQueue();
 
                 })
@@ -342,7 +343,10 @@ public class Server implements Runnable {
                         return null;
                     });
         }
-
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        System.out.println("AQUIIIIIIII");
     }
 
 
@@ -408,6 +412,7 @@ public class Server implements Runnable {
             PeerDataPut msg = (PeerDataPut) mensagem;
             respostaCausal = clock.regraCausal(msg.getVectorTag(), getVecPosition(msg.getSender()));
             if (respostaCausal) {
+                clock.updateVectorClock(msg.getVectorTag());
                 lockKeys(msg.getList().getLista());
                 this.clock.lock();
                 System.out.println("Mensagem perdida finalmente lida");

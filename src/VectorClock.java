@@ -22,11 +22,6 @@ public class VectorClock {
         if (vector.get(sender) + 1 != (messageVector.get(sender))){
             return false;
         }
-        for (int i = 0; i < nserver; i++) {
-            if (i != sender && vector.get(i) > (messageVector.get(i))) {
-                return false;
-            }
-        }
         return true;
     }
 
@@ -73,18 +68,24 @@ public class VectorClock {
     }
 
     public void lock(){
-        if(!this.lock.isLocked()) {
-            this.lock.lock();
-            System.out.println("Dei lock ao clock");
-        }
+
+        this.lock.lock();
+        //System.out.println("Dei lock ao clock");
+
 
     }
 
     public void unLock(){
-        if (lock.isHeldByCurrentThread()) {
-            lock.unlock();
-            System.out.println("Dei unlock ao clock");
-        }
+       try{
+           lock.unlock();
+           //System.out.println("Dei unlock ao clock");
+       }catch (Exception e){
+           System.out.println("Excessao no vector clock");
+           e.printStackTrace();
+       }
+
+
+
     }
 
 }

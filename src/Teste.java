@@ -20,7 +20,7 @@ public class Teste {
         teste.put(num1,"a".getBytes());
 
         long num2 = Long.MAX_VALUE-1;
-        //teste.put(num2,"a".getBytes());
+        teste.put(num2,"a".getBytes());
 
 
         ClientLibrary c2 = new ClientLibrary(nodes,8000);
@@ -36,21 +36,31 @@ public class Teste {
 
 
         c.put(teste);
-        //c2.put(teste2);
+        c2.put(teste2);
 
 
         List<Long> lista = new ArrayList<>();
         lista.add(10L);
+        lista.add(Long.MAX_VALUE-1);
 
 
-        sleep(500);
+
+        //sleep(500);
+        /*
         c.get(lista).thenAccept((map) ->{
+            System.out.println(map.keySet().size());
             if(map.keySet().isEmpty())System.out.println("RESPOSTA VAZIA");
-            if(map.get(10L)==null) System.out.println("Get com valor a nulo = get foi processado primeiro que o put");
-            String s = new String(map.get(10L), StandardCharsets.UTF_8);
-            System.out.println("Valor que a chave tem: " + s);
+            for(Map.Entry<Long,byte[]> entry : map.entrySet()){
+                if(entry.getValue() == null) {
+                    System.out.println("Get com valor a nulo = get foi processado primeiro que o put");
+                    continue;
+                }
+                String s = new String(entry.getValue(), StandardCharsets.UTF_8);
+                System.out.println("Valor que a chave tem: " + s);
+            }
 
-        });
+
+        });*/
 
         /*
         List<Integer> tag = new ArrayList<>();
