@@ -6,9 +6,12 @@ import javafx.util.Pair;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.locks.ReentrantLock;
+
+import static java.lang.Thread.sleep;
 
 //Servidor com relógio vetorial
 //Regra da entrega causal
@@ -34,7 +37,7 @@ public class Server implements Runnable {
         this.queueLock = new ReentrantLock();
         setPeers(peerss);
         this.clock = new VectorClock(peerss.size(),getVecPosition(this.address));
-        this.msgQueue = new ArrayList<>();
+        this.msgQueue = Collections.synchronizedList(new ArrayList<>());
 
     }
 
@@ -326,8 +329,10 @@ public class Server implements Runnable {
         int finalMinSv = minSv;
         ms.sendAsync(Address.from("localhost", minSv), "putServer", CollectionSerializer.getObjectInByte(pdata)).
                 thenRun(() -> {
-                    System.out.println(this.address + " - Mensagem putServer enviada para peer "+ finalMinSv + " com o clock " + tagclock);
-                    checkMsgQueue();
+                    try {
+                        System.out.println(this.address + " - Mensagem putServer enviada para peer " + finalMinSv + " com o clock " + tagclock);
+
+                    }catch (Exception e){e.printStackTrace();}
 
                 })
                 .exceptionally(e -> {
@@ -335,6 +340,7 @@ public class Server implements Runnable {
                     return null;
                 });
 
+        checkMsgQueue();
         for(int i = 0; i< peers.size();i++){
             if(peers.get(i)== minSv || peers.get(i) == address) continue;
             ms.sendAsync(Address.from("localhost", peers.get(i)), "updateClock", CollectionSerializer.getObjectInByte(tagclock)).
@@ -346,7 +352,7 @@ public class Server implements Runnable {
         }catch (Exception e){
             e.printStackTrace();
         }
-        System.out.println("AQUIIIIIIII");
+        //System.out.println("AQUIIIIIIII");
     }
 
 
@@ -403,31 +409,34 @@ public class Server implements Runnable {
 
 
 
-    private void checkMsgQueue(){
+    private  void checkMsgQueue(){
         boolean respostaCausal;
 
         this.queueLock.lock();
-        for(PeerDataPut mensagem : msgQueue){
+        this.clock.lock();
+        try {
 
-            PeerDataPut msg = (PeerDataPut) mensagem;
-            respostaCausal = clock.regraCausal(msg.getVectorTag(), getVecPosition(msg.getSender()));
-            if (respostaCausal) {
-                clock.updateVectorClock(msg.getVectorTag());
-                lockKeys(msg.getList().getLista());
-                this.clock.lock();
-                System.out.println("Mensagem perdida finalmente lida");
 
-                writeKeysInHashMap(msg.getList().getLista());
-                sendKeysToRespectiveSv(msg.getOtherData());
+        Iterator<PeerDataPut> iterator = msgQueue.iterator();
+        while(iterator.hasNext()){
+            PeerDataPut data = iterator.next();
+            respostaCausal = clock.regraCausal(data.getVectorTag(), getVecPosition(data.getSender()));
+            if(respostaCausal){
+                clock.updateVectorClock(data.getVectorTag());
+                lockKeys(data.getList().getLista());
+                System.out.println(address + " - Mensagem na MsgQueue lida");
+                sleep(200);
+                writeKeysInHashMap(data.getList().getLista());
+                sendKeysToRespectiveSv(data.getOtherData());
 
-                unlockKeys(msg.getList().getLista());
-                this.clock.unLock();
-
-                msgQueue.remove(msg);
+                unlockKeys(data.getList().getLista());
+                iterator.remove();
+                msgQueue.remove(data);
             }
-
         }
+        }catch (Exception e){e.printStackTrace();}
         this.queueLock.unlock();
+        this.clock.unLock();
 
     }
 

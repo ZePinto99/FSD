@@ -69,7 +69,9 @@ public class VectorClock {
 
     public void lock(){
 
-        this.lock.lock();
+        try {
+            this.lock.lock();
+        }catch (Exception e){e.printStackTrace();}
         //System.out.println("Dei lock ao clock");
 
 
