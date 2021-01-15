@@ -118,14 +118,39 @@ public class Server implements Runnable {
             lockKeys(tmpList);
             this.clock.lock();
 
-            writeKeysInHashMap(tmpList);
-            sendKeysToRespectiveSv(tmp);
+            handleMessage(tmpList,tmp);
 
             this.clock.unLock();
             unlockKeys(tmpList);
 
         }, es);
     }
+
+    private void handleMessage(List<Pair<Long, byte[]>> tmpList,Map<Integer, ListPair> tmp){
+        int minSv = Integer.MAX_VALUE;
+
+        for(int x : tmp.keySet()){
+            if(x < minSv) minSv = x;
+        }
+
+        if(tmpList.size() != 0 && !tmp.isEmpty()){
+            if(this.address > minSv){
+                ListPair lista = new ListPair();
+                lista.setLista(tmpList);
+                tmp.put(address,lista);
+                sendKeysToRespectiveSv(tmp);
+            }else {
+                writeKeysInHashMap(tmpList);
+                sendKeysToRespectiveSv(tmp);
+            }
+        }else {
+            writeKeysInHashMap(tmpList);
+            sendKeysToRespectiveSv(tmp);
+        }
+    }
+
+
+
 
     /*
      * Handler que trata de pedidos de servidores em que é assumido que este é o responsavel pela chaves enviadas
