@@ -215,7 +215,7 @@ public class Server implements Runnable {
                 e.printStackTrace();
             }
 
-            System.out.println(address + " Respondi ao get do cliente" + a.port());
+            System.out.println(address + " - Respondi ao get do cliente " + a.port());
             return CollectionSerializer.getObjectInByte(response);
         }, es);
 
@@ -318,7 +318,6 @@ public class Server implements Runnable {
         }
 
         this.hashMapLock.unlock();
-        System.out.println(address +" - DEI LOCK AS KEYS");
     }
 
     /*
@@ -326,7 +325,6 @@ public class Server implements Runnable {
      */
     private void unlockKeys(List<Pair<Long, byte[]>> lista){
         if(lista.size()==0)return;
-        System.out.println(address +" - DEI UNLOCK AS KEYS");
         this.hashMapLock.lock();
         for(Pair<Long, byte[]> entry: lista){
             keysValues.get(entry.getKey()).unLock();

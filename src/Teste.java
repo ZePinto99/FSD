@@ -40,6 +40,7 @@ public class Teste {
 
         /*
         * serve apenas para garantir que o pedido de Get é processado depois dos dois puts
+        * visto que o servidor é multi-threaded e o processamento de um pedido Get é mais rapido do que de um put
         */
         sleep(100);
 
@@ -53,8 +54,6 @@ public class Teste {
                 String s = new String(entry.getValue(), StandardCharsets.UTF_8);
                 System.out.println("Valor que a chave tem: " + s);
             }
-
-
         });
 
 

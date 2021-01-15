@@ -75,7 +75,7 @@ public class VectorClock {
 
         try {
             this.lock.lock();
-            System.out.println(vectorPosition +" - Dei lock ao clock");
+            //System.out.println(vectorPosition +" - Dei lock ao clock");
         }catch (Exception e){e.printStackTrace();}
 
 
@@ -85,9 +85,9 @@ public class VectorClock {
     public void unLock(){
        try{
            lock.unlock();
-           System.out.println(vectorPosition + " - Dei unlock ao clock");
+           //System.out.println(vectorPosition + " - Dei unlock ao clock");
        }catch (Exception e){
-           System.out.println("Excessao no vector clock");
+           //System.out.println("Excessao no vector clock");
            e.printStackTrace();
        }
 
