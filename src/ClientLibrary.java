@@ -20,6 +20,9 @@ public class ClientLibrary {
         ms.start();
     }
 
+    /*
+     * Funçao que escolhe a sorte um peer que o cliente vai comunicar
+     */
     private int chooseRandomPeerPort(){
         Random rand = new Random();
         return nodes.get(rand.nextInt(nodes.size()));
@@ -27,6 +30,9 @@ public class ClientLibrary {
 
 
 
+    /*
+     * Metodo que permite ao cliente por um conjunto de chaves no sistema
+     */
     public CompletableFuture<Void> put(Map<Long,byte[]> values){
         return ms.sendAsync(Address.from("localhost", peer), "put", CollectionSerializer.getObjectInByte(values))
                 .thenRun(() -> {
@@ -41,7 +47,9 @@ public class ClientLibrary {
     }
 
 
-    // TODO: isto ainda nao está bem implementado
+    /*
+     * Metodo que permite ao cliente obter o valor de uma dada lista de chaves que estao no sistema
+     */
     public CompletableFuture<Map<Long,byte[]>> get(Collection<Long> keys){
         byte[] collection = CollectionSerializer.getObjectInByte(keys);
 
@@ -60,24 +68,6 @@ public class ClientLibrary {
             return null;
         }
     }
-
-
-    // serve apenas para testar causualidade de mensagens
-    public CompletableFuture<Void> teste(PeerDataPut pd){
-
-        return ms.sendAsync(Address.from("localhost", 12345), "putServer", CollectionSerializer.getObjectInByte(pd))
-                .thenRun(() -> {
-                    System.out.println("Mensagem put enviada!");
-                })
-                .exceptionally(e -> {
-                    e.printStackTrace();
-                    return null;
-                });
-    }
-
-
-
-
 
 
 

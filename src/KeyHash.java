@@ -1,5 +1,8 @@
 public class KeyHash {
 
+    /*
+     * Funçao que faz calcula qual o servidor é responsavel por uma dada chave
+     */
     public static int giveHashOfKey(Long key,int servers){
         long intervalo = Long.MAX_VALUE/servers;
         int i;

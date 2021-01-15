@@ -47,8 +47,8 @@ public class Server implements Runnable {
     }
 
     /*
-    * inicializa o servidor ,i.e,
-    * */
+    * inicializa o servidor ,i.e, inicializa todos os handlers necessarios ao funcionamento do mesmo e dá start ao serviço
+    */
     public void startServer() {
 
         clientPutHandler();
@@ -66,6 +66,9 @@ public class Server implements Runnable {
     }
 
 
+    /*
+    * Handler que trata de pedidos de clientes nomeadamente de pedidos para por um conjunto de chaves no servidor
+    */
     private void clientPutHandler(){
 
         ms.registerHandler("put", (a, m)-> {
@@ -124,6 +127,9 @@ public class Server implements Runnable {
         }, es);
     }
 
+    /*
+     * Handler que trata de pedidos de servidores em que é assumido que este é o responsavel pela chaves enviadas
+     */
     private void serverPutHandler(){
 
         ms.registerHandler("putServer", (a, m)-> { // m é do tipo PeerData
@@ -168,6 +174,9 @@ public class Server implements Runnable {
 
     }
 
+    /*
+     * Handler que trata de pedidos de clientes nomeadamente de pedidos para obter o valor de um dado conjunto de chaves
+     */
     private void clientGetHandler(){
         ms.registerHandler("get", (a, m)-> {
             System.out.println(address + " - Recebi um get");
@@ -212,6 +221,11 @@ public class Server implements Runnable {
 
     }
 
+
+    /*
+     * Handler que trata de pedidos de servidor nomeadamente de pedidos para obter o valor de um dado conjunto de chaves
+     * em que é assumido que este é o responsavel pela chaves enviadas
+     */
     private void ServerGetHandler(){
         ms.registerHandler("getServer", (a, m)-> {
             System.out.println(address +" - Recebi um get de um Server");
@@ -256,6 +270,11 @@ public class Server implements Runnable {
 
     }
 
+    /*
+     * Handler que trata de pedidos de servidores nomeadamente pedidos para dar update ao clock visto que
+     * um servidor pode mandar mensagem para qualquer peer e tem de manter os restantes informados sobre as mensagens que envia
+     * de modo a nao bloquear quando mandar uma mensagem para os restantes
+     */
     private void ClockUpdateHandler(){
         ms.registerHandler("updateClock", (a, m)-> { //m  é lista de inteiros
             List<Integer> tag = (List<Integer>) CollectionSerializer.getObjectFromByte(m);
@@ -270,6 +289,10 @@ public class Server implements Runnable {
     }
 
 
+    /*
+     * Funçao auxiliar que escreve uma lista de pares, chave-valor, na hashmap local
+     * É assumido que a concorrencia a hashmap e das chaves ja foi tratada antes ou nao é um problema
+     */
     private void writeKeysInHashMap(List< Pair<Long, byte[]>> lista){
         if(lista.size()==0)return;
         for(Pair<Long, byte[]> entry : lista){
@@ -280,6 +303,9 @@ public class Server implements Runnable {
     }
 
 
+    /*
+     * Funçao auxiliar que dá lock a um lista de pares, chave-valor, na hashmap local
+     */
     private void lockKeys(List<Pair<Long, byte[]>> lista){
         if(lista.size()==0)return;
         this.hashMapLock.lock();
@@ -292,11 +318,12 @@ public class Server implements Runnable {
         }
 
         this.hashMapLock.unlock();
-
-
         System.out.println(address +" - DEI LOCK AS KEYS");
     }
 
+    /*
+     * Funçao auxiliar que dá unlock a um lista de pares, chave-valor, na hashmap local
+     */
     private void unlockKeys(List<Pair<Long, byte[]>> lista){
         if(lista.size()==0)return;
         System.out.println(address +" - DEI UNLOCK AS KEYS");
@@ -309,7 +336,11 @@ public class Server implements Runnable {
 
 
 
-    // funçao aux
+    /*
+     * Funçao auxiliar que tem como input um Map, Server Destino-Lista de chaves, que vai enviar para o server com o menor port
+     * todas as chaves, i.e, as chaves que este é responsavel mais as que nenhum dos dois é responsavel.
+     * O server destino é depois responsavel por enviar o resto das chaves para o seu responsavel
+     */
     private void sendKeysToRespectiveSv(Map<Integer, ListPair> data){
         try {
 
@@ -352,6 +383,20 @@ public class Server implements Runnable {
                 });
 
         checkMsgQueue();
+        sendTagsToAllPeers(minSv,tagclock);
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        //System.out.println("AQUIIIIIIII");
+    }
+
+
+    /*
+     * Funçao auxiliar que manda tags de updates de clock para os outro peers menos para o proprio servidor e para o "minSv"
+     * que corresponde ao servidor a quem ja enviou uma mensagem com dados
+     */
+    private void sendTagsToAllPeers(int minSv,List<Integer> tagclock){
         for(int i = 0; i< peers.size();i++){
             if(peers.get(i)== minSv || peers.get(i) == address) continue;
             ms.sendAsync(Address.from("localhost", peers.get(i)), "updateClock", CollectionSerializer.getObjectInByte(tagclock)).
@@ -360,16 +405,13 @@ public class Server implements Runnable {
                         return null;
                     });
         }
-        }catch (Exception e){
-            e.printStackTrace();
-        }
-        //System.out.println("AQUIIIIIIII");
     }
 
 
 
-
-
+    /*
+     * Funçao auxiliar que insere na hashmap de input,response, os valores que tem na hashmap local que corresponde aos que estao na lista de input
+     */
     private void getKeysOfHashMap(ArrayList<Pair<Long, byte[]>> lista,Map<Long,byte[]> response){
         for(Pair<Long, byte[]> entry : lista){
             response.put(entry.getKey(),keysValues.get(entry.getKey()).getDados());
@@ -377,7 +419,9 @@ public class Server implements Runnable {
 
     }
 
-    //
+    /*
+     * Funçao auxiliar que envia pedidos de chaves para o servidor responsavel por elas de modo a obter o valor atual das mesmas
+     */
     private void sendGetRequestToRespectivSv(Map<Integer, List<Long>> map,Map<Long,byte[]> response) throws Exception{
         if(map.keySet().isEmpty()) {
             return;
@@ -417,8 +461,11 @@ public class Server implements Runnable {
 
 
 
-
-    private  void checkMsgQueue(){
+    /*
+     * Funçao auxiliar verifica as mensagens que estao na msgqueue,ou seja mensagens que nao verificaram a regra causal quando foram recebidas,
+     * e volta a testar a causualiadde das mesmas para verificar se ja podem ser respondidas
+     */
+    private void checkMsgQueue(){
         boolean respostaCausal;
 
         this.queueLock.lock();
@@ -448,6 +495,9 @@ public class Server implements Runnable {
 
     }
 
+    /*
+     * Funçao auxiliar que dado um port de um servidor verifica em que posiçao da lista,peers, este se encontra
+     */
     private int getVecPosition(int add){
         for(int i= 0;i <peers.size();i++){
             if(peers.get(i) == add){

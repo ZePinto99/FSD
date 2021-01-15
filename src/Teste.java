@@ -35,8 +35,8 @@ public class Teste {
 
 
         List<Long> listaGet = new ArrayList<>();
-        listaGet.add(10L);
-        listaGet.add(Long.MAX_VALUE-1);
+        listaGet.add(num1);
+        listaGet.add(num2);
 
         /*
         * serve apenas para garantir que o pedido de Get é processado depois dos dois puts

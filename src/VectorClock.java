@@ -17,6 +17,9 @@ public class VectorClock {
 
     }
 
+    /*
+     * Funçao que verifica a causualidade da mensagem enviada
+     */
     public boolean regraCausal(List<Integer> messageVector, int sender){
 
 
